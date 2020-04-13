@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f00741e0cdd446b4da4e2f06c921bd6e, type: 3}
+  m_Name: TestDockProps
+  m_EditorClassIdentifier: 
+  spriteBtnClose:
+    sprite: {fileID: 21300000, guid: 4fd7450116924884fb6a03d316b5eac7, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  spriteBtnRestore:
+    sprite: {fileID: 21300000, guid: 24601df2754f7ef438f27223fc3eae6c, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  spriteBtnMax:
+    sprite: {fileID: 21300000, guid: b6e362217caac6545938eba85f36189f, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  spriteBtnPull:
+    sprite: {fileID: 21300000, guid: df816a210b939974d96fe76e65edb275, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  spriteBtnPin:
+    sprite: {fileID: 21300000, guid: 63163d334e2161b4580a2a4f3aa6a0b4, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  floatWin:
+    spriteBtnPlate:
+      sprite: {fileID: 21300000, guid: 0e18179d7f09ace478e26e9894596928, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    spriteFrame:
+      sprite: {fileID: 21300000, guid: 7e4945c9b154cb346bbb6ade8687ce22, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    splitterWidth: 10
+    btnWidth: 20
+    btnHeight: 20
+    titlebarHeight: 24
+  dockWin:
+    spriteBtnPlate:
+      sprite: {fileID: 21300000, guid: 7fbc9563dc5100942a941d793b96be13, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    spriteFrame:
+      sprite: {fileID: 21300000, guid: 7fbc9563dc5100942a941d793b96be13, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    splitterWidth: 10
+    btnWidth: 20
+    btnHeight: 20
+    titlebarHeight: 24
+  maximizeWin:
+    spriteBtnPlate:
+      sprite: {fileID: 21300000, guid: 7fbc9563dc5100942a941d793b96be13, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    spriteFrame:
+      sprite: {fileID: 21300000, guid: 7fbc9563dc5100942a941d793b96be13, type: 3}
+      color: {r: 1, g: 1, b: 1, a: 1}
+    splitterWidth: 10
+    btnWidth: 20
+    btnHeight: 20
+    titlebarHeight: 24
+  winPadding: 5
+  shadow:
+    sprite: {fileID: 21300000, guid: 027a7849228da2b4e858223f3b0a59a9, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  shadowOffset: {x: 10, y: -10}
+  shadowColor: {r: 0, g: 0, b: 0, a: 0.5019608}
+  sashSprite:
+    sprite: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 0}
+  sashWidth: 10
+  titleFont: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+  titleLabelColor: {r: 0, g: 0, b: 0, a: 1}
+  titleFontSize: 14
+  dockIntoDim: 40
+  dockSideDim: 20
+  dockUnhover: {r: 1, g: 0.5, b: 0.25, a: 1}
+  dockHover: {r: 0, g: 1, b: 0, a: 1}
+  doubleClickRate: 0.5
+  minsizeWindow: {x: 50, y: 50}
+  minsizeTabs: {x: 50, y: 50}
