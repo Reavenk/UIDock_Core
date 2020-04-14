@@ -262,6 +262,7 @@ namespace PxPre
                 GameObject goWindow = new GameObject("DockWindow");
                 Window window = goWindow.AddComponent<Window>();
                 window.Initialize(this, rt, title, flags);
+                window.NotifyFloating();
 
                 window.rectTransform.anchoredPosition = 
                     this.GetNewSpawnSpot();
@@ -354,8 +355,9 @@ namespace PxPre
                     {
                         if (dst == this.root)
                         {
-                            Dock newDock = new Dock(win);
+                            Dock newDock = new Dock(win, false);
                             Dock branch = new Dock(Dock.Type.Vertical, newDock, dst);
+                            dst.cachedPlace = new Rect();
                             this.root = branch;
                             return newDock;
                         }
@@ -374,6 +376,8 @@ namespace PxPre
                             
                             int idx = parent.children.IndexOf(dst);
                             Dock branch = new Dock(Dock.Type.Vertical, newDock, dst);
+                            branch.cachedPlace = dst.cachedPlace;
+                            dst.cachedPlace = new Rect();
                             dst.parent = branch;
                             parent.children[idx] = branch;
                             branch.parent = parent;
@@ -384,8 +388,9 @@ namespace PxPre
                     { 
                         if(dst == this.root)
                         { 
-                            Dock newDock = new Dock(win);
+                            Dock newDock = new Dock(win, false);
                             Dock branch = new Dock(Dock.Type.Vertical, dst, newDock);
+                            dst.cachedPlace = new Rect();
                             this.root = branch;
                             return newDock;
                         }
@@ -404,6 +409,8 @@ namespace PxPre
 
                             int idx = dst.parent.children.IndexOf(dst);
                             Dock branch = new Dock(Dock.Type.Vertical, dst, newDock);
+                            branch.cachedPlace = dst.cachedPlace;
+                            dst.cachedPlace = new Rect();
                             dst.parent = branch;
                             parent.children[idx] = branch;
                             branch.parent = parent;
@@ -414,8 +421,9 @@ namespace PxPre
                     {
                         if (dst == this.root)
                         {
-                            Dock newDock = new Dock(win);
+                            Dock newDock = new Dock(win, false);
                             Dock branch = new Dock(Dock.Type.Horizontal, newDock, dst);
+                            dst.cachedPlace = new Rect();
                             this.root = branch;
                             return newDock;
                         }
@@ -425,6 +433,8 @@ namespace PxPre
 
                             int idx = dst.parent.children.IndexOf(dst);
                             Dock branch = new Dock(Dock.Type.Horizontal, newDock, dst);
+                            branch.cachedPlace = dst.cachedPlace;
+                            dst.cachedPlace = new Rect();
                             parent.children[idx] = branch;
                             branch.parent = parent;
                             return newDock;
@@ -443,8 +453,9 @@ namespace PxPre
                     {
                         if (dst == this.root)
                         {
-                            Dock newDock = new Dock(win);
+                            Dock newDock = new Dock(win, false);
                             Dock branch = new Dock(Dock.Type.Horizontal, dst, newDock);
+                            dst.cachedPlace = new Rect();
                             this.root = branch;
                             return newDock;
                         }
@@ -454,6 +465,8 @@ namespace PxPre
 
                             int idx = dst.parent.children.IndexOf(dst);
                             Dock branch = new Dock(Dock.Type.Horizontal, dst, newDock);
+                            branch.cachedPlace = dst.cachedPlace;
+                            dst.cachedPlace = new Rect();
                             parent.children[idx] = branch;
                             branch.parent = parent;
                             return newDock;

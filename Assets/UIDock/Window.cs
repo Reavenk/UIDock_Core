@@ -256,6 +256,7 @@ namespace PxPre
                 if((flags & Flag.HasPin) != 0)
                 {
                     this.btnPin = this.AddButton(props.spriteBtnPin.sprite);
+                    this.btnPin.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_Pin(); });
                 }
 
                 if((flags & Flag.Floatable) != 0)
@@ -286,6 +287,11 @@ namespace PxPre
                     this.system.RestoreWindow(this);
                 else
                     this.system.MaximizeWindow(this);
+            }
+
+            void OnTitlebarButton_Pin()
+            { 
+                this.system.UndockWindow(this);
             }
 
             /// <summary>
@@ -581,11 +587,12 @@ namespace PxPre
                     this.RestoreWindow();
                 }
 
+                DockProps props = this.system.props;
+
                 if(drag == FrameDrag.Position)
                 { 
                     this.rectTransform.anchoredPosition += eventData.delta;
                     this.system.HandleWindowDrag(this, eventData);
-
                 }
                 else
                 {
@@ -596,23 +603,40 @@ namespace PxPre
 
                     if((drag & FrameDrag.Top) != 0)
                     { 
-                        rtpos.y += eventData.delta.y;
-                        rtsize.y += eventData.delta.y;
+                        float dy = eventData.delta.y;
+                        float newSz = Mathf.Max(rtsize.y + dy, props.minsizeWindow.y);
+                        dy = newSz - rtsize.y;
+
+                        rtpos.y += dy;
+                        rtsize.y += dy;
 
                     }
                     else if((drag & FrameDrag.Bottom) != 0)
                     {
-                        rtsize.y -= eventData.delta.y;
+
+                        float dy = eventData.delta.y;
+                        float newSz = Mathf.Max(rtsize.y - dy, props.minsizeWindow.y);
+                        dy = newSz - rtsize.y;
+
+                        rtsize.y += dy;
                     }
 
                     if((drag & FrameDrag.Left) != 0)
                     { 
-                        rtpos.x += eventData.delta.x;
-                        rtsize.x -= eventData.delta.x;
+                        float dx = eventData.delta.x;
+                        float newSz = Mathf.Max(rtsize.x - dx, props.minsizeWindow.x);
+                        dx = rtsize.x - newSz;
+
+                        rtpos.x += dx;
+                        rtsize.x -= dx;
                     }
                     else if((drag & FrameDrag.Right) != 0)
                     {
-                        rtsize.x += eventData.delta.x;
+                        float dx = eventData.delta.x;
+                        float newSz = Mathf.Max(rtsize.x + dx, props.minsizeWindow.x);
+                        dx = newSz - rtsize.x;
+
+                        rtsize.x += dx;
                     }
 
                     this.rectTransform.anchoredPosition = rtpos;
@@ -707,6 +731,9 @@ namespace PxPre
             /// </summary>
             public void NotifyMaximized()
             {
+                if(this.btnPin.plate != null)
+                    this.btnPin.plate.gameObject.SetActive(false);
+
                 this.ChangeStyle(DockProps.WinType.Maximized);
                 this._SetRestoreButton();
             }
@@ -716,6 +743,9 @@ namespace PxPre
             /// </summary>
             public void NotifyFloating()
             {
+                if (this.btnPin.plate != null)
+                    this.btnPin.plate.gameObject.SetActive(false);
+
                 this.ChangeStyle(DockProps.WinType.Float);
                 this._SetMaximizeButton();
             }
@@ -725,6 +755,9 @@ namespace PxPre
             /// </summary>
             public void NotifyDocked()
             {
+                if (this.btnPin.plate != null)
+                    this.btnPin.plate.gameObject.SetActive(true);
+
                 this.ChangeStyle(DockProps.WinType.Docked);
             }
 
