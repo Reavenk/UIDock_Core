@@ -107,6 +107,16 @@ namespace PxPre
                     d.parent = this;
             }
 
+            public Vector2 CalculateMinsize(DockProps dp, bool cache = true)
+            {
+                Vector2 ret = this.CalculateMinsizeImpl(dp, cache);
+
+                if(cache == true)
+                    this.minSize = ret;
+
+                return ret;
+            }
+
             /// <summary>
             /// Recursively calculate the minimum size.
             /// </summary>
@@ -114,7 +124,7 @@ namespace PxPre
             /// The properties with the minium size information of leaf nodes.</param>
             /// <returns>The calculated minimum size. It also takes into account
             /// the size needed for sashes.</returns>
-            public Vector2 CalculateMinsize(DockProps dp)
+            private Vector2 CalculateMinsizeImpl(DockProps dp, bool cache = true)
             { 
                 switch( dockType)
                 { 
@@ -124,7 +134,7 @@ namespace PxPre
                             bool alo = false; // At least once
                             foreach(Dock d in this.children)
                             { 
-                                Vector2 vd = d.CalculateMinsize(dp);
+                                Vector2 vd = d.CalculateMinsize(dp, cache);
                                 reth.x += vd.x;
                                 reth.y = Mathf.Max(reth.y, vd.y);
 
@@ -142,7 +152,7 @@ namespace PxPre
                             bool alo = false;
                             foreach(Dock d in this.children)
                             { 
-                                Vector2 vd = d.CalculateMinsize(dp);
+                                Vector2 vd = d.CalculateMinsize(dp, cache);
                                 retv.x = Mathf.Max(retv.x, vd.x);
                                 retv.y += vd.y;
 
@@ -163,15 +173,6 @@ namespace PxPre
                 }
 
                 return Vector2.zero;
-            }
-
-            /// <summary>
-            /// Calculate the minimum size of the hierarchy and cache the results.
-            /// </summary>
-            /// <param name="dp">The properties to pass into CalculateMinsize.</param>
-            public void CacheMinsize(DockProps dp)
-            { 
-                this.minSize = this.CalculateMinsize(dp);
             }
         }
     }

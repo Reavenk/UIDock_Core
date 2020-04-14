@@ -789,8 +789,31 @@ namespace PxPre
 
                 this.root.CalculateMinsize(this.props);
 
+                LayoutEntry rootLE = new LayoutEntry(this.root, new Rect(0.0f, 0.0f, sz.x, sz.y));
+                this.UpdateDockedLayoutHeirarchy(rootLE);
+            }
+
+            /// <summary>
+            /// Recursively update a branch of docks, based on the specified
+            /// Dock's current cached placement info.
+            /// </summary>
+            /// <param name="d">The Dock to update the hierarchy of.</param>
+            public void UpdateDockedBranch(Dock d)
+            { 
+                LayoutEntry branchLE = new LayoutEntry(d, d.cachedPlace);
+                this.UpdateDockedLayoutHeirarchy(branchLE);
+            }
+
+            /// <summary>
+            /// Give a LayoutEntry, recursively update the hierarchy.
+            /// </summary>
+            /// <param name="leBranch">
+            /// The specified Dock to update the heirarchy of, and the location
+            /// it should take up.</param>
+            private void UpdateDockedLayoutHeirarchy(LayoutEntry leBranch)
+            {
                 Queue< LayoutEntry> q = new Queue<LayoutEntry>();
-                q.Enqueue(new LayoutEntry(this.root, new Rect(0.0f, 0.0f, sz.x, sz.y)));
+                q.Enqueue(leBranch);
 
                 while(q.Count != 0)
                 { 
@@ -1221,6 +1244,7 @@ namespace PxPre
                 ds.dockA = a;
                 ds.dockB = b;
                 ds.grain = grain;
+                ds.system = this;
                 Window.PrepareChild(ds.rectTransform);
                 ds.rectTransform.SetAsFirstSibling();
 
