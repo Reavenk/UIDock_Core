@@ -174,6 +174,14 @@ namespace PxPre
 
                 return Vector2.zero;
             }
+
+            public bool IsContainerType()
+            { 
+                return 
+                    this.dockType == Type.Horizontal || 
+                    this.dockType == Type.Vertical || 
+                    this.dockType == Type.Tab;
+            }
         }
     }
 }

@@ -504,22 +504,23 @@ namespace PxPre
                 { 
                     this.root = null;
                 }
-                else if(
-                    parent.dockType == Dock.Type.Tab || 
-                    parent.dockType == Dock.Type.Horizontal || 
-                    parent.dockType == Dock.Type.Vertical)
+                else if(parent.IsContainerType() == true)
                 {
                     parent.children.Remove(dock);
                     if(parent.children.Count == 1)
                     { 
                         if(parent == this.root)
                         {
-                            // Set it as root
-                            this.root = parent;
+                            // If the deletion leave us with a root container
+                            // with only 1 child, that 1 child becomes the new root.
+                            this.root = parent.children[0];
+                            this.root.parent = null;
                         }
                         else
                         { 
-                            // Replace the tabs
+                            // If the removal leaves a parent with only 1 item, then
+                            // we cascade the deletion by also deleting the parent and 
+                            // leaving the single child in its place.
                             int idx = parent.parent.children.IndexOf(parent);
                             Dock single = parent.children[0];
                             parent.parent.children[idx] = single;
@@ -702,9 +703,10 @@ namespace PxPre
                 if(this.windowDragged == window)
                     this.windowDragged = null;
 
-                if(this.root.window == window)
-                    this.root = null;
-
+                // DELME
+                //if(this.root.window == window)
+                //    this.root = null;
+                //
 
                 if (this.maximized == window)
                     this.RestoreWindow(window);
@@ -1128,7 +1130,7 @@ namespace PxPre
 
 
                 DragTarget drt = this.QueryDropTarget(v2);
-                if(drt.type != DropType.Invalid)
+                if (drt.type != DropType.Invalid && drt.type != DropType.Into) // Into is for tabbed containers, which are not currently supported.
                 { 
                     this.dropVisual.gameObject.SetActive(true);
 
