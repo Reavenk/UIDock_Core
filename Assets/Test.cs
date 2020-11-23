@@ -45,5 +45,10 @@ public class Test : MonoBehaviour
 
             root.WrapIntoWindow(img.rectTransform, "Thing!");
         }
+
+        if(GUILayout.Button("Clear") == true)
+        { 
+            this.root.Clear();
+        }
     }
 }
