@@ -506,7 +506,10 @@ namespace PxPre
             /// </summary>
             private void MaximizeWindow()
             { 
-                this.system.MaximizeWindow(this);
+                if(this.system.IsMaximized(this) == true)
+                    this.system.RestoreWindow(this);
+                else
+                    this.system.MaximizeWindow(this);
             }
 
             /// <summary>

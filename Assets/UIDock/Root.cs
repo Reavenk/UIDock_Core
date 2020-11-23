@@ -584,11 +584,11 @@ namespace PxPre
                 foreach (KeyValuePair<RectTransform, Window> kvp in this.windowLookup)
                 {
                     Window winIt = kvp.Value;
+                    winIt.DisableShadow();
 
                     if (winIt != this.maximized)
                         winIt.gameObject.SetActive(false);
-                    else
-                        winIt.DisableShadow();
+                    
                 }
 
                 foreach(DockSash ds in this.sashes)
