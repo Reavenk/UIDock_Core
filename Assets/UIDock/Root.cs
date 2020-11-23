@@ -307,7 +307,7 @@ namespace PxPre
 
                 this.dockLookup.Add(win.Win, d);
                 this.floatingWindows.Remove(win);
-                win.shadow.gameObject.SetActive(false);
+                win.DisableShadow();
                 this.SetDirtySashReconstr();
                 return true;
             }
@@ -539,6 +539,7 @@ namespace PxPre
 
                 this.floatingWindows.Add(win);
                 win.rectTransform.SetAsLastSibling();
+                win.EnableShadow();
                 win.UpdateShadow();
 
                 this.SetDirtySashReconstr();
@@ -587,8 +588,11 @@ namespace PxPre
                     if (winIt != this.maximized)
                         winIt.gameObject.SetActive(false);
                     else
-                        winIt.shadow.gameObject.SetActive(false);
+                        winIt.DisableShadow();
                 }
+
+                foreach(DockSash ds in this.sashes)
+                    ds.gameObject.SetActive(false);
 
 
                 RectTransform retMax = window.rectTransform;
@@ -659,7 +663,7 @@ namespace PxPre
                 foreach(Window w in this.floatingWindows)
                 { 
                     w.gameObject.SetActive(true);
-                    w.shadow.gameObject.SetActive(true);
+                    w.EnableShadow();
                     w.rectTransform.SetAsLastSibling();
                     w.UpdateShadow();
                 }
@@ -731,7 +735,7 @@ namespace PxPre
                         if(kvp.Key != this.maximized)
                             kvp.Key.gameObject.SetActive(false);
 
-                        kvp.Value.shadow.gameObject.SetActive(false);
+                        kvp.Value.DisableShadow();
                     }
                     this.maximized.gameObject.SetActive(true);
 
@@ -840,7 +844,7 @@ namespace PxPre
                         le.dock.window.rectTransform.sizeDelta = le.rect.size;
                         le.dock.window.rectTransform.SetAsFirstSibling();
 
-                        le.dock.window.shadow.gameObject.SetActive(false);
+                        le.dock.window.DisableShadow();
                     }
                     else if(le.dock.dockType == Dock.Type.Tab)
                     {
@@ -1115,11 +1119,13 @@ namespace PxPre
                 if(this.dropVisual == null)
                 { 
                     GameObject goPD = new GameObject("PreviewDrop");
+
                     goPD.transform.SetParent(this.transform);
                     this.dropVisual = goPD.AddComponent<UnityEngine.UI.Image>();
                     Window.PrepareChild(this.dropVisual.rectTransform);
                     this.dropVisual.color = this.props.dockHover;
                 }
+
 
                 DragTarget drt = this.QueryDropTarget(v2);
                 if(drt.type != DropType.Invalid)
@@ -1135,6 +1141,10 @@ namespace PxPre
                         this.dropVisual.color = this.props.dockHover;
                     else
                         this.dropVisual.color = this.props.dockUnhover;
+                }
+                else
+                {
+                    this.dropVisual.gameObject.SetActive(false);
                 }
             }
 
@@ -1258,6 +1268,7 @@ namespace PxPre
                 ds.dockB = b;
                 ds.grain = grain;
                 ds.system = this;
+                this.props.sashSprite.ApplySliced(ds);
                 Window.PrepareChild(ds.rectTransform);
                 ds.rectTransform.SetAsFirstSibling();
 
@@ -1271,7 +1282,7 @@ namespace PxPre
             /// Move all existing sashes to their correct locations.
             /// </summary>
             /// <remarks>Assumes the docks are in the correct location before calling.</remarks>
-            private void RealignSashes()
+            public void RealignSashes()
             { 
                 foreach(DockSash ds in this.sashes)
                     ds.Align();
@@ -1280,7 +1291,7 @@ namespace PxPre
             /// <summary>
             /// Clear all content from the system.
             /// </summary>
-            void Clear()
+            public void Clear()
             { 
                 foreach(Window w in this.windowLookup.Values)
                 {

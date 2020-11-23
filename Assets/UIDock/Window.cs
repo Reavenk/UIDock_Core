@@ -283,15 +283,12 @@ namespace PxPre
             /// </summary>
             void OnTitlebarButton_RestMax()
             { 
-                if(this.system.IsMaximized(this) == true)
-                    this.system.RestoreWindow(this);
-                else
-                    this.system.MaximizeWindow(this);
+                this.MaximizeWindow();
             }
 
             void OnTitlebarButton_Pin()
             { 
-                this.system.UndockWindow(this);
+                this.PinWindow();
             }
 
             /// <summary>
@@ -493,7 +490,7 @@ namespace PxPre
             public void EnableShadow(bool shadow = true)
             { 
                 if(this.shadow != null)
-                    this.shadow.gameObject.SetActive(false);
+                    this.shadow.gameObject.SetActive(shadow);
             }
 
             /// <summary>
@@ -510,8 +507,6 @@ namespace PxPre
             private void MaximizeWindow()
             { 
                 this.system.MaximizeWindow(this);
-
-                // TODO: Set button icon
             }
 
             /// <summary>
@@ -520,8 +515,6 @@ namespace PxPre
             private void RestoreWindow()
             { 
                 this.system.RestoreWindow(this);
-
-                // TODO: Set button icon
             }
 
             /// <summary>
@@ -536,7 +529,8 @@ namespace PxPre
             /// Undock the window.
             /// </summary>
             private void PinWindow()
-            { 
+            {
+                this.system.UndockWindow(this);
             }
 
             /// <summary>
@@ -757,6 +751,8 @@ namespace PxPre
             {
                 if (this.btnPin.plate != null)
                     this.btnPin.plate.gameObject.SetActive(true);
+
+                this._SetMaximizeButton();
 
                 this.ChangeStyle(DockProps.WinType.Docked);
             }

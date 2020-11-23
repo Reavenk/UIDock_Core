@@ -125,7 +125,8 @@ namespace PxPre
                     this.dockB.cachedPlace.x += moveAmt;
                     this.system.UpdateDockedBranch(this.dockA);
                     this.system.UpdateDockedBranch(this.dockB);
-                    this.Align();
+
+                    this.system.RealignSashes();
                 }
                 else if(this.grain == Grain.Vertical)
                 { 
@@ -160,7 +161,8 @@ namespace PxPre
                     this.dockB.cachedPlace.y += moveAmt;
                     this.system.UpdateDockedBranch(this.dockA);
                     this.system.UpdateDockedBranch(this.dockB);
-                    this.Align();
+
+                    this.system.RealignSashes();
                 }
             }
         }
