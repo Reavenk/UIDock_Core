@@ -220,6 +220,9 @@ namespace PxPre
                 /// </summary>
                 public float minWidth = 10.0f;
 
+                // The threshold of when a tab width transitions from normal to compact.
+                public float compactThreshold = 20.0f;
+
                 /// <summary>
                 /// The border of the close button on the top and bottom.
                 /// </summary>

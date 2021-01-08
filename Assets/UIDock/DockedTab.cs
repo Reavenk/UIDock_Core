@@ -221,7 +221,7 @@ namespace PxPre
                 ret.label.text = tabbedWin.window.name;
                 ret.label.color = props.tabs.tabFontColor;
                 ret.label.fontSize = props.tabs.tabFontSize;
-                ret.label.verticalOverflow = VerticalWrapMode.Overflow;
+                ret.label.verticalOverflow = VerticalWrapMode.Truncate;
                 ret.label.horizontalOverflow = HorizontalWrapMode.Wrap;
                 ret.label.alignment = TextAnchor.MiddleCenter;
                 ret.label.font = props.tabs.tabFont;
@@ -253,6 +253,15 @@ namespace PxPre
                 totalTabsWidth = Mathf.Min(size.x, totalTabsWidth);
 
                 float tabWidth = totalTabsWidth / childrenCt;
+                if(tabWidth < this.root.props.tabs.compactThreshold)
+                { 
+                    // If we're below the compact threshold, recalculate
+                    // everything else if the active tab was clamped to
+                    // that size.
+                    tabWidth = 
+                        (totalTabsWidth - this.root.props.tabs.compactThreshold)/(childrenCt - 1);
+                }
+
                 float xOff = 0.0f;
 
                 floor.transform.SetAsFirstSibling();
@@ -260,17 +269,40 @@ namespace PxPre
                 HashSet<Dock> childrenEncountered = new HashSet<Dock>();
                 foreach(Dock d in this.dock.children)
                 {
+                    bool isActive = d == this.dock.activeTab;
+                    float useTabWidth = tabWidth;
+
+                    if(isActive == true)
+                    { 
+                        if(useTabWidth < this.root.props.tabs.compactThreshold)
+                            useTabWidth = this.root.props.tabs.compactThreshold;
+                    }
+
                     TabsAssets ta = GetTabAssets(d, this.root.rectTransform, this.root.props);
                     RectTransform rtt = ta.notebookTab.rectTransform;
                     rtt.anchoredPosition = new Vector2(pos.x + xOff, pos.y);
-                    rtt.sizeDelta = new Vector2(tabWidth, size.y);
+                    rtt.sizeDelta = new Vector2(useTabWidth, size.y);
 
-                    if(d == this.dock.activeTab)
+                    if(isActive)
+                    {
                         rtt.SetSiblingIndex(floor.transform.GetSiblingIndex() + 1);
+                        ta.closeButton.gameObject.SetActive(true);
+                    }
                     else
+                    {
                         rtt.SetAsFirstSibling();
 
-                    xOff += tabWidth;
+                        // If there's so little space, don't even show the close button
+                        bool showClose = (useTabWidth >= this.root.props.tabs.minWidth);
+                        ta.closeButton.gameObject.SetActive(showClose);
+                    }
+
+                    if(useTabWidth <= this.root.props.tabs.compactThreshold)
+                        ta.label.gameObject.SetActive(false);
+                    else
+                        ta.label.gameObject.SetActive(true);
+
+                    xOff += useTabWidth;
                     childrenEncountered.Add(d);
                 }
 
