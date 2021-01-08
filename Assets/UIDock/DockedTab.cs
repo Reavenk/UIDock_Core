@@ -218,7 +218,7 @@ namespace PxPre
                 GameObject goText = new GameObject("Text");
                 goText.transform.SetParent(rtTab);
                 ret.label = goText.AddComponent<UnityEngine.UI.Text>();
-                ret.label.text = tabbedWin.window.name;
+                ret.label.text = tabbedWin.window.TitlebarText;
                 ret.label.color = props.tabs.tabFontColor;
                 ret.label.fontSize = props.tabs.tabFontSize;
                 ret.label.verticalOverflow = VerticalWrapMode.Truncate;

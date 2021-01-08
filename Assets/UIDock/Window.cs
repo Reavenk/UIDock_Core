@@ -267,7 +267,7 @@ namespace PxPre
                     this.btnRestMax.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_RestMax(); });
                 }
 
-                this.SetTitlebar(titlebar);
+                this.TitlebarText = titlebar;
 
                 this.PlaceContentWin();
             }
@@ -294,12 +294,15 @@ namespace PxPre
             }
 
             /// <summary>
-            /// Set the titlebar text.
+            /// Access to the titlebar text.
             /// </summary>
-            /// <param name="titlebar"></param>
-            public void SetTitlebar(string titlebar)
-            { 
-                this.titlebar.text = titlebar;
+            public string TitlebarText 
+            {
+                get => this.titlebar.text;
+                set
+                { 
+                    this.titlebar.text = value;
+                } 
             }
 
             /// <summary>
