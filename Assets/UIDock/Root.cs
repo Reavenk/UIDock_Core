@@ -229,6 +229,17 @@ namespace PxPre
             List<DockSash> sashes = new List<DockSash>();
 
             /// <summary>
+            /// If true, windows can be docked on top of each other to make notebooked
+            /// tabbed layouts. Else if false, notebook tab docking is not allowed.
+            /// </summary>
+            public bool allowTabbedDocking = true;
+
+            /// <summary>
+            /// The windowing assets for tabbed contents.
+            /// </summary>
+            Dictionary<Dock, DockedTab> tabAssets = new Dictionary<Dock, DockedTab>();
+
+            /// <summary>
             /// Is there a maximized window.
             /// </summary>
             /// <returns>True if there is a maximized window; else false.</returns>
@@ -303,7 +314,9 @@ namespace PxPre
                 if(d == null)
                     return false;
 
-                d.window.NotifyDocked();
+                // If it's in a tab, it need to remain borderless.
+                if(d.parent == null || d.parent.dockType != Dock.Type.Tab)
+                    d.window.NotifyDocked();
 
                 this.dockLookup.Add(win.Win, d);
                 this.floatingWindows.Remove(win);
@@ -317,18 +330,13 @@ namespace PxPre
             /// organizational reasons.
             /// </summary>
             /// <param name="win">The window to dock.</param>
-            /// <param name="dst">The reference Dock of where to dock the window.</param>
+            /// <param name="dst">The reference Dock of where to dock the window; or null, for referencing the root.</param>
             /// <param name="dt">The relative position to the reference of where to dock to.</param>
             /// <returns>The Dock created holding the win parameter. Or null if the operation fails.</returns>
             private Dock DockWindowImpl(Window win, Dock dst, DropType dt)
             { 
-                // TODO: Float dock
                 if(dt == DropType.Invalid)
                     return null;
-
-                Dock parent = null;
-                if(dst != null)
-                    parent = dst.parent;
 
                 if (this.root == null)
                 { 
@@ -338,19 +346,97 @@ namespace PxPre
                     return newRoot;
                 }
 
-                if(dst.dockType == Dock.Type.Tab)
-                {
-                    // This should never happen from an outside caller, only from
-                    // inside with recursion.
-                    // TODO:
-                }
-                else if(dst.parent != null && dst.parent.dockType == Dock.Type.Tab)
+                if(dst == null)
+                    dst = this.root;
+
+                Dock parent = null;
+                if(dst != null)
+                    parent = dst.parent;
+
+                if(dt == DropType.Into)
                 { 
-                    // Recursion
-                    return DockWindowImpl(win, dst.parent, DropType.Into);
+                    if(this.allowTabbedDocking == false)
+                    {
+                        Debug.LogError("Attempting to dock tabbed notebooks on a layout system with tabs disabled.");
+                        return null;
+                    }
+
+                    // Edge case for docking to the root.
+                    if (dst.parent == null && this.root == dst)
+                    {
+                        if(dst.dockType != Dock.Type.Window && dst.dockType != Dock.Type.Tab)
+                        {
+                            Debug.LogError("Attempting to create a docked tab into the root when not allowed.");
+                            return null;
+                        }
+
+                    }
+                    else if(dst.dockType == Dock.Type.Tab)
+                    { } // Do nothing - eat up if-else condition
+                    else 
+                    {
+                        // If we're trying to dock on to a window, while note exactly allowed, it could
+                        // be that its parent is a notebook tabbed collection that we want to drag on to.
+                        // We only do this once because notebook tabs can only contain windows so the
+                        // max depth should be 1.
+                        if (dst.dockType == Dock.Type.Window && dst.parent.dockType == Dock.Type.Tab)
+                            dst = dst.parent;
+
+                        if (dst.dockType == Dock.Type.Horizontal || dst.dockType == Dock.Type.Vertical)
+                        {
+                            Debug.LogError("Attempting to create a docked tab into a destination that doesn't allow tabs to exist.");
+                            return null;
+                        }
+                    }
+
+
+                    // With the error checking at the top, 1 of two valid conditions now exist, we're dropping
+                    // the window onto another window to CREATE a tab notebook system,
+                    // ... or ...
+                    // we're APPENDING to an existing tab system.
+                    Dock newDock = new Dock(win, false);
+
+                    if (dst.dockType == Dock.Type.Window)
+                    { 
+                        Dock oldParent = dst.parent;
+                        Dock newTabDock = new Dock(Dock.Type.Tab, new Dock[]{newDock, dst });
+                        newTabDock.parent = oldParent;
+
+                        if (oldParent == null)
+                            this.root = newTabDock;
+                        else
+                        { 
+                            int idx = oldParent.children.IndexOf(dst);
+                            oldParent.children[idx] = newTabDock;
+                        }
+
+                        dst.window.ChangeStyle(DockProps.WinType.Borderless);
+                    }
+                    else // if(dst.dockType == Dock.Type.Tab)
+                    { 
+                        dst.children.Add(newDock);
+                        newDock.parent = dst;
+                    }
+                    // Layout everything to force creating/deleting tab assets and
+                    // to re-align them.
+                    newDock.parent.activeTab = newDock;
+                    win.ChangeStyle(DockProps.WinType.Borderless);
+                    this.SetDirty();
+                    return newDock;
                 }
-                if (dst.dockType == Dock.Type.Window)
-                {
+
+                if (dst.dockType == Dock.Type.Window || dst.dockType == Dock.Type.Tab)
+                {   // The top/bottom/left/right handlers
+
+                    // if our destination is a child of a tab, we're more interested
+                    // in the operation being relative to the tab system (or else it
+                    // would be an illegal layout operation).
+                    if(dst.parent != null && dst.parent.dockType == Dock.Type.Tab)
+                    {
+                        dst = dst.parent;
+                        parent = dst.parent;
+                    }
+
                     if (dt == DropType.Top)
                     {
                         if (dst == this.root)
@@ -482,6 +568,124 @@ namespace PxPre
                         }
                     }
                 }
+
+                // If we're docking to a sizer, we do similar logic as window/tab docking
+                // for the top/bottom/left/right above. So there's probably an elegant way
+                // to unify a lot of logic between top/left/right/bottom destinations and 
+                // window/tab/vertical/horizontal docks, but for now we're just getting the
+                // basics to work.
+
+                if (dst.dockType == Dock.Type.Vertical)
+                {
+                    if(dt == DropType.Left)
+                    {
+                        if (this.root == dst)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            Dock newVert = new Dock(Dock.Type.Horizontal, newDock, dst);
+                            this.root = newVert;
+                            return newDock;
+                        }
+                        else if(dst.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            newDock.parent = dst.parent;
+                            int dstIdx = dst.parent.children.IndexOf(dst);
+                            dst.parent.children.Insert(dstIdx, newDock);
+                            return newDock;
+                        }
+                    }
+                    else if(dt == DropType.Right)
+                    {
+                        if (this.root == dst)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            Dock newVert = new Dock(Dock.Type.Horizontal, dst, newDock);
+                            this.root = newVert;
+                            return newDock;
+                        }
+                        else if (dst.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            newDock.parent = dst.parent;
+                            int dstIdx = dst.parent.children.IndexOf(dst);
+                            dst.parent.children.Insert(dstIdx + 1, newDock);
+                            return newDock;
+                        }
+                    }
+                    else if(dt == DropType.Top)
+                    {
+                        Dock newDock = new Dock(win, false);
+                        dst.children.Insert(0, newDock);
+                        newDock.parent = dst;
+                        return newDock;
+                    }
+                    else if(dt == DropType.Bottom)
+                    { 
+                        Dock newDock = new Dock(win, false);
+                        dst.children.Add(newDock);
+                        newDock.parent = dst;
+                        return newDock;
+                    }
+                    
+                    Debug.LogError("Attempting illegal docking operation onto vertical container.");
+                    return null;
+                }
+                if(dst.dockType == Dock.Type.Horizontal)
+                {
+                    if (dt == DropType.Left)
+                    {
+                        Dock newDock = new Dock(win, false);
+                        newDock.parent = dst;
+                        dst.children.Insert(0, newDock);
+                        return newDock;
+                    }
+                    else if (dt == DropType.Right)
+                    {
+                        Dock newDock = new Dock(win, false);
+                        newDock.parent = dst;
+                        dst.children.Add(newDock);
+                        return newDock;
+                    }
+                    else if (dt == DropType.Top)
+                    {
+                        if(this.root == dst)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            Dock newVert = new Dock(Dock.Type.Vertical, newDock, dst);
+                            this.root = newVert;
+                            return newDock;
+                        }
+                        else if(dst.parent.dockType == Dock.Type.Vertical)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            newDock.parent = dst.parent;
+                            int dstIdx = dst.parent.children.IndexOf(dst);
+                            dst.parent.children.Insert(dstIdx, newDock);
+                            return newDock;
+                        }
+                    }
+                    else if (dt == DropType.Bottom)
+                    {
+                        if (this.root == dst)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            Dock newVert = new Dock(Dock.Type.Vertical, dst, newDock);
+                            this.root = newVert;
+                            return newDock;
+                        }
+                        else if (dst.parent.dockType == Dock.Type.Vertical)
+                        {
+                            Dock newDock = new Dock(win, false);
+                            newDock.parent = dst.parent;
+                            int dstIdx = dst.parent.children.IndexOf(dst);
+                            dst.parent.children.Insert(dstIdx + 1, newDock);
+                        }
+                    }
+                    
+                    Debug.LogError("Attempting illegal docking operation into horizontal container.");
+                    return null;
+                }
                 return null;
             }
 
@@ -507,24 +711,30 @@ namespace PxPre
                 else if(parent.IsContainerType() == true)
                 {
                     parent.children.Remove(dock);
+                    bool isTab = parent.dockType == Dock.Type.Tab;
                     if(parent.children.Count == 1)
-                    { 
-                        if(parent == this.root)
+                    {
+                        ManageCollapse(parent);
+
+                        if (isTab == true)
                         {
-                            // If the deletion leave us with a root container
-                            // with only 1 child, that 1 child becomes the new root.
-                            this.root = parent.children[0];
-                            this.root.parent = null;
+                            // If we collapse tabs by removing enough children, it no longer exists, so
+                            // its assets should be destroyed.
+                            DockedTab dtab;
+                            if (this.tabAssets.TryGetValue(parent, out dtab) == true)
+                            {
+                                dtab.Destroy();
+                                this.tabAssets.Remove(parent);
+                            }
                         }
-                        else
+                    }
+                    else
+                    { 
+                        if(isTab == true && dock == parent.activeTab)
                         { 
-                            // If the removal leaves a parent with only 1 item, then
-                            // we cascade the deletion by also deleting the parent and 
-                            // leaving the single child in its place.
-                            int idx = parent.parent.children.IndexOf(parent);
-                            Dock single = parent.children[0];
-                            parent.parent.children[idx] = single;
-                            single.parent = parent.parent;
+                            // TODO: Make this more intelligent, maybe set it to the tab before
+                            // the one we closed.
+                            parent.activeTab = parent.children[0];
                         }
                     }
                 }
@@ -540,12 +750,88 @@ namespace PxPre
 
                 this.floatingWindows.Add(win);
                 win.rectTransform.SetAsLastSibling();
+                win.gameObject.SetActive(true);
                 win.EnableShadow();
                 win.UpdateShadow();
 
                 this.SetDirtySashReconstr();
 
                 return true;
+            }
+
+            /// <summary>
+            /// Handle collapsing a parent node because it has all its children removed until
+            /// it only had 1 remaining child.
+            /// </summary>
+            /// <param name="colParent">
+            /// The parent that's being collapse. It should be a container dock with only 1 child.
+            /// </param>
+            void ManageCollapse(Dock colParent)
+            {
+                if(colParent.dockType == Dock.Type.Window)
+                    return; // Illegal
+
+                if(colParent.children.Count != 1)
+                    return;
+
+                Dock single = null;
+                if (colParent == this.root)
+                {
+                    // If the deletion leave us with a root container
+                    // with only 1 child, that 1 child becomes the new root.
+                    this.root = colParent.children[0];
+                    this.root.parent = null;
+                    return;
+                }
+                else
+                {
+                    // If the removal leaves a parent with only 1 item, then
+                    // we cascade the deletion by also deleting the parent and 
+                    // leaving the single child in its place.
+                    int idx = colParent.parent.children.IndexOf(colParent);
+                    single = colParent.children[0];
+                    colParent.parent.children[idx] = single;
+                    single.parent = colParent.parent;
+                }
+
+                if (single != null && single.dockType == Dock.Type.Window)
+                {
+                    // This is most important for tabs. If we close the 2nd to last tab and it
+                    // was visible, we need the singled item to be visible, and we need to 
+                    //restore the style.
+                    //
+                    // We could if statement this for just Tab parented things,
+                    // but for now it's everything indiscriminantly.
+                    single.window.ChangeStyle(DockProps.WinType.Docked, true);
+                    single.window.gameObject.SetActive(true);
+                }
+
+                // The parent should no longer exist, but this means we put single
+                // into another container that we didn't add with the same protections
+                // with normal docking. 
+                //
+                // So we need to check if additional collapsing can occur from edge
+                // cases.
+
+                if (
+                    single.IsContainerType() &&
+                    single.parent != null &&
+                    single.dockType == colParent.parent.dockType)
+                { 
+                    // At this point, colParent's parent can either be a horizontal or vertical
+                    // grained container. If it maches the same grain as the parent, we need to
+                    // make the equivalent layout, but by collapsing the contents of single into
+                    // its parent.
+
+                    int idx = single.parent.children.IndexOf(single);
+                    single.parent.children.RemoveAt(idx);
+                    single.parent.children.InsertRange(idx, single.children);
+                    foreach(Dock d in single.parent.children)
+                        d.parent = single.parent;
+
+                }
+
+
             }
 
             /// <summary>
@@ -563,6 +849,28 @@ namespace PxPre
                     (this.spawnWrapIt + 1) % this.spawnWrap;
 
                 return ret;
+            }
+
+            /// <summary>
+            /// Get an iterator through all the docked windows.
+            /// </summary>
+            /// <returns>Iterator of docked windows.</returns>
+            public IEnumerable<Window> DockedWindows()
+            { 
+                foreach(Dock d in this.dockLookup.Values)
+                { 
+                    if(d.dockType == Dock.Type.Window)
+                        yield return d.window;
+                }
+            }
+
+            /// <summary>
+            /// Get an iterator through all the floating windows.
+            /// </summary>
+            /// <returns>Iterator of the floating windows.</returns>
+            public IEnumerable<Window> FloatingWindows()
+            { 
+                return this.floatingWindows;
             }
 
             /// <summary>
@@ -703,15 +1011,11 @@ namespace PxPre
                 if(this.windowDragged == window)
                     this.windowDragged = null;
 
-                // DELME
-                //if(this.root.window == window)
-                //    this.root = null;
-                //
-
                 if (this.maximized == window)
                     this.RestoreWindow(window);
 
                 this.UndockWindow(window);
+                this.floatingWindows.Remove(window);
 
                 this.windowLookup.Remove(window.Win);
                 GameObject.Destroy(window.shadow.gameObject);
@@ -834,7 +1138,9 @@ namespace PxPre
                 Queue< LayoutEntry> q = new Queue<LayoutEntry>();
                 q.Enqueue(leBranch);
 
-                while(q.Count != 0)
+                HashSet<Dock> processedTabs = new HashSet<Dock>();
+
+                while (q.Count != 0)
                 { 
                     LayoutEntry le = q.Dequeue();
 
@@ -850,8 +1156,21 @@ namespace PxPre
                     }
                     else if(le.dock.dockType == Dock.Type.Tab)
                     {
-                        le.dock.window.rectTransform.anchoredPosition = new Vector2( le.rect.x, -le.rect.y);
-                        le.dock.window.rectTransform.sizeDelta = le.rect.size;
+                        processedTabs.Add(le.dock);
+
+                        if(le.dock.activeTab == null)
+                            le.dock.activeTab = le.dock.children[0];
+
+                        DockedTab dtabs;
+                        if (this.tabAssets.TryGetValue(le.dock, out dtabs) == false)
+                        {
+                            dtabs = new DockedTab(le.dock, this);
+                            dtabs.CreateAssets();
+                            this.tabAssets.Add(le.dock, dtabs);
+                        }
+
+                        dtabs.HandleDock();
+
                     }
                     else if(le.dock.dockType == Dock.Type.Horizontal)
                     { 
@@ -952,7 +1271,7 @@ namespace PxPre
                 { 
                     if(d.cachedPlace.Contains(v2) == true)
                     { 
-                        if(d.dockType == Dock.Type.Window)
+                        if(d.dockType == Dock.Type.Window || d.dockType == Dock.Type.Tab)
                         { 
                             Vector2 cen = d.cachedPlace.center;
                             Rect rCen = new Rect(cen.x - dropRadi, cen.y - dropRadi, dropDiam, dropDiam);
@@ -1018,10 +1337,6 @@ namespace PxPre
 
                 Vector2 v2 = ConvertMousePointToCoord(eventData);
                 this.HandleDragPreview(v2);
-
-                //Vector2 v = this.transform.worldToLocalMatrix.MultiplyPoint(eventData.position);
-                //Debug.Log(v);
-                //Debug.Log(eventData.position);
             }
 
             /// <summary>
@@ -1130,19 +1445,22 @@ namespace PxPre
 
 
                 DragTarget drt = this.QueryDropTarget(v2);
-                if (drt.type != DropType.Invalid && drt.type != DropType.Into) // Into is for tabbed containers, which are not currently supported.
+                if (drt.type != DropType.Invalid) // Into is for tabbed containers, which are not currently supported.
                 { 
-                    this.dropVisual.gameObject.SetActive(true);
+                    if(drt.type != DropType.Into || this.allowTabbedDocking == true)
+                    {
+                        this.dropVisual.gameObject.SetActive(true);
 
-                    this.dropVisual.rectTransform.anchoredPosition = 
-                        new Vector2(drt.region.x, -drt.region.y);
+                        this.dropVisual.rectTransform.anchoredPosition = 
+                            new Vector2(drt.region.x, -drt.region.y);
 
-                    this.dropVisual.rectTransform.sizeDelta = drt.region.size;
+                        this.dropVisual.rectTransform.sizeDelta = drt.region.size;
 
-                    if(drt.ontop == true)
-                        this.dropVisual.color = this.props.dockHover;
-                    else
-                        this.dropVisual.color = this.props.dockUnhover;
+                        if(drt.ontop == true)
+                            this.dropVisual.color = this.props.dockHover;
+                        else
+                            this.dropVisual.color = this.props.dockUnhover;
+                    }
                 }
                 else
                 {

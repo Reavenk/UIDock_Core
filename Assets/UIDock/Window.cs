@@ -60,7 +60,7 @@ namespace PxPre
             /// </summary>
             /// <remarks>The siz of </remarks>
             [System.Flags]
-            enum FrameDrag
+            public enum FrameDrag
             { 
                 /// <summary>
                 /// A frame is not being 
@@ -108,6 +108,8 @@ namespace PxPre
             /// The location where the mouse drag was started.
             /// </summary>
             static Vector2 localDragStart;
+
+
 
             /// <summary>
             /// A collection of variables for the titlebar buttons.
@@ -267,7 +269,7 @@ namespace PxPre
 
                 this.SetTitlebar(titlebar);
 
-                this.PlaceContent();
+                this.PlaceContentWin();
             }
 
             /// <summary>
@@ -376,12 +378,39 @@ namespace PxPre
                 return ret;
             }
 
+            IEnumerable<ButtonInfo> EnuerateButtons()
+            {
+                if (this.btnClose.plate != null)
+                    yield return this.btnClose;
+
+                if (this.btnRestMax.plate != null)
+                    yield return this.btnRestMax;
+
+                if (this.btnPin.plate != null)
+                    yield return this.btnPin;
+            }
+
+            /// <summary>
+            /// Match the client content to take up the full windowed area. Used
+            /// for docked content to hide the border.
+            /// </summary>
+            void PlaceContentBorderless()
+            {
+                this.win.anchorMin = Vector2.zero;
+                this.win.anchorMax = Vector2.one;
+                this.win.offsetMin = Vector2.zero;
+                this.win.offsetMax = Vector2.zero;
+
+                foreach (ButtonInfo bi in this.EnuerateButtons())
+                    bi.plate.gameObject.SetActive(false);
+            }
+
             /// <summary>
             /// Move the inner content around in the window to be placed. This
             /// does not only account for the managed ui, but for all the other
             /// things (titlebar buttons, titlebar text, etc).
             /// </summary>
-            void PlaceContent()
+            void PlaceContentWin()
             {
                 DockProps props = system.props;
                 DockProps.WindowSetting winset = this.GetWindowSetting();
@@ -393,21 +422,11 @@ namespace PxPre
                 this.win.offsetMin = new Vector2(props.winPadding, props.winPadding);
                 this.win.offsetMax = new Vector2(-props.winPadding, -winset.titlebarHeight);
 
-                List<ButtonInfo> buttons = new List<ButtonInfo>();
-                if(this.btnClose.plate != null)
-                    buttons.Add(this.btnClose);
-
-                if(this.btnRestMax.plate != null)
-                    buttons.Add(this.btnRestMax);
-
-                if(this.btnPin.plate != null)
-                    buttons.Add(this.btnPin);
-
-
                 float ffromR = props.winPadding;
                 float buttonY = (props.floatWin.titlebarHeight - props.floatWin.btnHeight) * 0.5f;
-                foreach(ButtonInfo bi in buttons)
-                { 
+                foreach(ButtonInfo bi in this.EnuerateButtons())
+                {
+                    bi.plate.gameObject.SetActive(true);
                     bi.plate.rectTransform.sizeDelta = 
                         new Vector2(
                             props.floatWin.btnWidth, 
@@ -546,6 +565,13 @@ namespace PxPre
                 return this.system.props.GetWindowSetting(this.style);
             }
 
+            public static void _StartOutsideDrag(FrameDrag frame, Window dragWin, Vector2 offset)
+            { 
+                drag = frame;
+                dragWindow = dragWin;
+                localDragStart = offset;
+            }
+
             /// <summary>
             /// Unity interface method for starting a UI drag.
             /// </summary>
@@ -638,7 +664,7 @@ namespace PxPre
 
                     this.rectTransform.anchoredPosition = rtpos;
                     this.rectTransform.sizeDelta = rtsize;
-                    this.PlaceContent();
+                    this.PlaceContentWin();
                 }
 
                 this.UpdateShadow();
@@ -772,21 +798,28 @@ namespace PxPre
 
                 this.style = winType;
 
-                DockProps.WindowSetting ws = this.GetWindowSetting();
-                this.sprite = ws.spriteFrame.sprite;
-                this.color = ws.spriteFrame.color;
+                if(winType == DockProps.WinType.Borderless)
+                { 
+                    this.PlaceContentBorderless();
+                }
+                else
+                {
+                    DockProps.WindowSetting ws = this.GetWindowSetting();
+                    this.sprite = ws.spriteFrame.sprite;
+                    this.color = ws.spriteFrame.color;
 
-                if(this.btnClose.plate != null)
-                    ws.spriteBtnPlate.ApplySliced(this.btnClose.plate);
+                    if(this.btnClose.plate != null)
+                        ws.spriteBtnPlate.ApplySliced(this.btnClose.plate);
 
-                if(this.btnPin.plate != null)
-                    ws.spriteBtnPlate.ApplySliced(this.btnPin.plate);
+                    if(this.btnPin.plate != null)
+                        ws.spriteBtnPlate.ApplySliced(this.btnPin.plate);
 
-                if(this.btnRestMax.plate != null)
-                    ws.spriteBtnPlate.ApplySliced(this.btnRestMax.plate);
+                    if(this.btnRestMax.plate != null)
+                        ws.spriteBtnPlate.ApplySliced(this.btnRestMax.plate);
 
-                if(placeContent == true)
-                    this.PlaceContent();
+                    if(placeContent == true)
+                        this.PlaceContentWin();
+                }
             }
 
             /// <summary>

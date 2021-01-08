@@ -128,6 +128,12 @@ namespace PxPre
                 Float,
 
                 /// <summary>
+                /// No window shoould be visible. Used to hide the window
+                /// when tabbed.
+                /// </summary>
+                Borderless,
+
+                /// <summary>
                 /// Docked windows.
                 /// </summary>
                 Docked,
@@ -136,6 +142,98 @@ namespace PxPre
                 /// The window that is maximized.
                 /// </summary>
                 Maximized
+            }
+
+            /// <summary>
+            /// Assets for docked notebook tabs.
+            /// These are put into a class that will be instanced only once in DockProps. 
+            /// This is done for organizational reasons, to categorize all the notebook 
+            /// tab assets and values outside of the other DockProp assets.
+            /// </summary>
+            [System.Serializable]
+            public class TabProperties
+            {
+                /// <summary>
+                /// The height of the area alloted to dock regions.
+                /// </summary>
+                public float rgnHeight = 20.0f;
+
+                /// <summary>
+                /// The left arrow to navigate compacted tabs.
+                /// </summary>
+                public Sprite leftCompactedTabs;
+
+                /// <summary>
+                /// The right arrow to navigate compacted tabs.
+                /// </summary>
+                public Sprite rightCompactedTabs;
+
+                /// <summary>
+                /// The button for compacted tabs.
+                /// </summary>
+                public Sprite compactedButtonPlate;
+
+                public Sprite closeWindowIcon;
+
+                /// <summary>
+                /// The width of the left and right compacted buttons.
+                /// </summary>
+                public float compactButtonWidth = 30.0f;
+
+                /// <summary>
+                /// The sprite for tabs.
+                /// </summary>
+                public Sprite tabPlate;
+
+                /// <summary>
+                /// The floor for tabs.
+                /// </summary>
+                public Sprite tabFloor;
+
+                /// <summary>
+                /// The close button plate.
+                /// </summary>
+                public Sprite innerTabBtn;
+
+                /// <summary>
+                /// The font used for tab text.
+                /// </summary>
+                public Font tabFont;
+
+                /// <summary>
+                /// The tab text font color.
+                /// </summary>
+                public Color tabFontColor;
+
+                /// <summary>
+                /// The tab text font size.
+                /// </summary>
+                public int tabFontSize;
+
+                /// <summary>
+                /// The maximum width of a tab.
+                /// </summary>
+                public float maxWidth = 100.0f;
+
+                /// <summary>
+                /// The minimum width of a tab.
+                /// </summary>
+                public float minWidth = 10.0f;
+
+                /// <summary>
+                /// The border of the close button on the top and bottom.
+                /// </summary>
+                public float closeBorderVert = 3.0f;
+
+                /// <summary>
+                /// The width of the close button.
+                /// </summary>
+                public float closeWidth = 20.0f;
+
+                /// <summary>
+                /// The border of the close button from the right.
+                /// </summary>
+                public float closeBorderRight = 5.0f;
             }
 
             /// <summary>
@@ -263,6 +361,8 @@ namespace PxPre
             /// </summary>
             public Vector2 minsizeTabs = new Vector2(50.0f, 50.0f);
 
+            public TabProperties tabs = new TabProperties();
+
             /// <summary>
             /// Get the window setting based off a style enum.
             /// </summary>
@@ -273,6 +373,12 @@ namespace PxPre
                 switch(wt)
                 { 
                     case WinType.Docked:
+                        return this.dockWin;
+
+                    case WinType.Borderless:
+                        // There really are no settings for borderless, but we return
+                        // *something* to avoid null exceptions or having ensure null
+                        // checks are wrapped where needed.
                         return this.dockWin;
 
                     case WinType.Float:

@@ -47,6 +47,11 @@ namespace PxPre
             public Dock parent;
 
             /// <summary>
+            /// Only used for doc types. Which window is shown?
+            /// </summary>
+            public Dock activeTab = null;
+
+            /// <summary>
             /// The type of node the Dock is.
             /// </summary>
             public Type dockType = Type.Void;
