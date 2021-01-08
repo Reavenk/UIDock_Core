@@ -1059,7 +1059,7 @@ namespace PxPre
                     foreach(KeyValuePair<RectTransform, Window> kvp in this.windowLookup)
                     { 
                         if(kvp.Key != this.maximized)
-                            kvp.Key.gameObject.SetActive(false);
+                            kvp.Value.gameObject.SetActive(false);
 
                         kvp.Value.DisableShadow();
                     }
