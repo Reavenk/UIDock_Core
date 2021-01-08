@@ -937,6 +937,9 @@ namespace PxPre
 
                 window.NotifyMaximized();
 
+                foreach(KeyValuePair<Dock, DockedTab> kvp in this.tabAssets)
+                    kvp.Value.Hide();
+
                 return true;
             }
 
@@ -955,9 +958,11 @@ namespace PxPre
                     return false;
 
                 this.maximized = null;
+                foreach (KeyValuePair<Dock, DockedTab> kvp in this.tabAssets)
+                    kvp.Value.Show();
 
                 // If before it was maximized, it was a dock
-                if(this.dockLookup.ContainsKey(window.Win) == true)
+                if (this.dockLookup.ContainsKey(window.Win) == true)
                 {
                     window.transform.SetParent(this.rectTransform);
                     Window.PrepareChild(window.rectTransform);

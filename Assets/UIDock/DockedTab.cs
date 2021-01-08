@@ -348,6 +348,19 @@ namespace PxPre
                     new Vector2(rc.x, -rc.y),
                     new Vector2(rc.width, dtH));
             }
+
+            public void Show(bool toggle = true)
+            { 
+                this.floor.gameObject.SetActive(toggle);
+
+                foreach(KeyValuePair<Dock,TabsAssets> kvp in this.assetLookup)
+                    kvp.Value.notebookTab.gameObject.SetActive(toggle);
+            }
+
+            public void Hide()
+            { 
+                this.Show(false);
+            }
         } 
     }
 }
