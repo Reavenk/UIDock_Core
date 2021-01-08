@@ -80,3 +80,24 @@ MonoBehaviour:
   doubleClickRate: 0.5
   minsizeWindow: {x: 50, y: 50}
   minsizeTabs: {x: 50, y: 50}
+  tabs:
+    rgnHeight: 30
+    leftCompactedTabs: {fileID: 21300000, guid: 5747a84112475994a9cfc5c27c1ee6ee,
+      type: 3}
+    rightCompactedTabs: {fileID: 21300000, guid: 36a29deb10fa47840a261387f1967660,
+      type: 3}
+    compactedButtonPlate: {fileID: 21300000, guid: 0e18179d7f09ace478e26e9894596928,
+      type: 3}
+    closeWindowIcon: {fileID: 21300000, guid: caf744387e0d7a348b2f05b3741fdf35, type: 3}
+    compactButtonWidth: 30
+    tabPlate: {fileID: 21300000, guid: 8e6137e76c4aad740b74df3a97bfda50, type: 3}
+    tabFloor: {fileID: 21300000, guid: 6a33b68246fddbe41b4b437581e863f4, type: 3}
+    innerTabBtn: {fileID: 21300000, guid: 0e18179d7f09ace478e26e9894596928, type: 3}
+    tabFont: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    tabFontColor: {r: 0, g: 0, b: 0, a: 1}
+    tabFontSize: 14
+    maxWidth: 200
+    minWidth: 10
+    closeBorderVert: 5
+    closeWidth: 20
+    closeBorderRight: 5
