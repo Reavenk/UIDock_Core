@@ -427,6 +427,7 @@ namespace PxPre
                 foreach(ButtonInfo bi in this.EnuerateButtons())
                 {
                     bi.plate.gameObject.SetActive(true);
+
                     bi.plate.rectTransform.sizeDelta = 
                         new Vector2(
                             props.floatWin.btnWidth, 
@@ -754,10 +755,11 @@ namespace PxPre
             /// </summary>
             public void NotifyMaximized()
             {
+                this.ChangeStyle(DockProps.WinType.Maximized);
+
                 if(this.btnPin.plate != null)
                     this.btnPin.plate.gameObject.SetActive(false);
 
-                this.ChangeStyle(DockProps.WinType.Maximized);
                 this._SetRestoreButton();
             }
 
@@ -766,10 +768,11 @@ namespace PxPre
             /// </summary>
             public void NotifyFloating()
             {
+                this.ChangeStyle(DockProps.WinType.Float);
+
                 if (this.btnPin.plate != null)
                     this.btnPin.plate.gameObject.SetActive(false);
 
-                this.ChangeStyle(DockProps.WinType.Float);
                 this._SetMaximizeButton();
             }
 
