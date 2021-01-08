@@ -97,7 +97,8 @@ MonoBehaviour:
     tabFontColor: {r: 0, g: 0, b: 0, a: 1}
     tabFontSize: 14
     maxWidth: 200
-    minWidth: 10
+    minWidth: 30
+    compactThreshold: 50
     closeBorderVert: 5
     closeWidth: 20
     closeBorderRight: 5
