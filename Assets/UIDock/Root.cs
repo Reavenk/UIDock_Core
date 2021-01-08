@@ -114,6 +114,21 @@ namespace PxPre
                 { 
                     return new DragTarget(null, DropType.Invalid, new Rect(), false);
                 }
+
+                /// <summary>
+                /// Create a clone with a specific ontop value.
+                /// </summary>
+                /// <param name="forcedOntop">The ontop value to override</param>
+                /// <returns>A clone of the invoking object, but with a forced ontop value.</returns>
+                public DragTarget OnTop(bool forcedOntop)
+                { 
+                    DragTarget dt = new DragTarget();
+                    dt.ontop = forcedOntop;
+                    dt.region = this.region;
+                    dt.target = this.target;
+                    dt.type = this.type;
+                    return dt;
+                }
             }
 
             /// <summary>
@@ -1272,35 +1287,73 @@ namespace PxPre
                     if(d.cachedPlace.Contains(v2) == true)
                     { 
                         if(d.dockType == Dock.Type.Window || d.dockType == Dock.Type.Tab)
-                        { 
-                            Vector2 cen = d.cachedPlace.center;
+                        {   // We finally found a window region the mouse fits in
+
+                            
+                            List<DragTarget> lefts      = GetItemsInDirection(d, DropType.Left, this.props.dockSideDim);
+                            List<DragTarget> rights     = GetItemsInDirection(d, DropType.Right, this.props.dockSideDim);
+                            List<DragTarget> tops       = GetItemsInDirection(d, DropType.Top, this.props.dockSideDim);
+                            List<DragTarget> bottoms    = GetItemsInDirection(d, DropType.Bottom, this.props.dockSideDim);
+
+                            // Check if the cursor is in the center, but the center is going to be relative go these GetItems* results.
+                            Vector2 cen = 
+                                new Vector2(
+                                    (lefts[lefts.Count - 1].region.xMax + rights[rights.Count - 1].region.x) * 0.5f,
+                                    (tops[tops.Count - 1].region.yMax + bottoms[bottoms.Count - 1].region.y) * 0.5f);
+
                             Rect rCen = new Rect(cen.x - dropRadi, cen.y - dropRadi, dropDiam, dropDiam);
-                            Rect rLeft = new Rect(d.cachedPlace.x, d.cachedPlace.y, this.props.dockSideDim, d.cachedPlace.height);
-                            Rect rRight = new Rect(d.cachedPlace.xMax - this.props.dockSideDim,d.cachedPlace.y,this.props.dockSideDim,d.cachedPlace.height);
-                            Rect rTop = new Rect(d.cachedPlace.x,d.cachedPlace.y,d.cachedPlace.width,this.props.dockSideDim);
-                            Rect rBottom = new Rect(d.cachedPlace.x,d.cachedPlace.yMax - this.props.dockSideDim,d.cachedPlace.width,this.props.dockSideDim);
 
                             if(rCen.Contains(v2) == true)
                                 return new DragTarget(d, DropType.Into, rCen, true);
 
-                            if(rLeft.Contains(v2) == true)
-                                return new DragTarget(d, DropType.Left, rLeft, true);
+                            // Find what side we're furthest past the boundary of
+                            List < DragTarget > sideToCheck = lefts;
+                            float checkSideDst = lefts[lefts.Count - 1].region.xMax - v2.x;
+                            int axisCheck = 0; //x
+                            //
+                            float dst = v2.x - rights[rights.Count - 1].region.x;
+                            if(dst > checkSideDst)
+                            {
+                                checkSideDst = dst;
+                                sideToCheck = rights;
+                            }
+                            //
+                            dst = tops[tops.Count - 1].region.y - v2.y;
+                            if(dst > checkSideDst)
+                            { 
+                                checkSideDst = dst;
+                                sideToCheck = tops;
+                                axisCheck = 1; // set to y
+                            }
+                            //
+                            dst = v2.y - bottoms[bottoms.Count - 1].region.yMax;
+                            if(dst > checkSideDst)
+                            { 
+                                checkSideDst = dst;
+                                sideToCheck = bottoms;
+                                axisCheck = 1; // set to y
+                            }
 
-                            if(rRight.Contains(v2) == true)
-                                return new DragTarget(d, DropType.Right, rRight, true);
+                            foreach(DragTarget dt in sideToCheck)
+                            { 
+                                if(dt.region.Contains(v2) == true)
+                                    return dt;
+                            }
 
-                            if(rTop.Contains(v2) == true)
-                                return new DragTarget(d, DropType.Top, rTop, true);
-
-                            if(rBottom.Contains(v2) == true)
-                                return new DragTarget(d, DropType.Bottom, rBottom, true);
-
-                            // TODO: Needs rework
-
-                            return DragTarget.Invalid();
-
+                            // If it's not at the center or and edge, at least draw a preview. But we need to figure
+                            // which preview to draw.
+                            //
+                            // We're just going to use the center, or else if we want he closest point on the rectangle,
+                            // we need to know what kind of side it is which is even more branching.
+                            float curToRgn = Mathf.Abs(v2[axisCheck] - sideToCheck[sideToCheck.Count - 1].region.center[axisCheck]);
+                            float curToCen = Mathf.Abs(v2[axisCheck] - cen[axisCheck]);
+                            //
+                            if(curToRgn < curToCen)
+                                return sideToCheck[sideToCheck.Count - 1].OnTop(false);
+                            else
+                                return new DragTarget(d, DropType.Into, rCen, false);
                         }
-                        else if(d.children != null)
+                        else if(d.dockType != Dock.Type.Tab && d.children != null)
                         { 
                             bool found = false;
                             foreach(Dock dc in d.children)
@@ -1321,6 +1374,152 @@ namespace PxPre
                 }
 
                 return DragTarget.Invalid();
+            }
+
+            /// <summary>
+            /// Find all the possible drop targets from a node's direction.
+            /// </summary>
+            /// <param name="starting">A window or tab node to start scanning from.</param>
+            /// <param name="dir">The direction to process. Only Top/Bottom/Left/Right are supported.</param>
+            /// <param name="diam"></param>
+            /// <returns>The drop targets for a given diretion.</returns>
+            List<DragTarget> GetItemsInDirection(Dock starting, DropType dir, float side)
+            { 
+                // This feels a little unelegant, like there's some kind of pattern that could 
+                // be leveraged - but instead we're just coding unrolled permutations.
+
+                List<DragTarget> lst = new List<DragTarget>();
+
+                lst.Add(new DragTarget(starting, dir, new Rect(), true));
+                Dock it = starting;
+
+                if (dir == DropType.Left)
+                { 
+                    while (it != null && it.parent != null)
+                    {
+                        if (it.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            if (it.parent.children.IndexOf(it) != 0)
+                                break;
+
+                            it = it.parent;
+                        }
+                        else if (it.parent.dockType == Dock.Type.Vertical)
+                        {
+                            lst.Add(new DragTarget(it.parent, dir, new Rect(), true));
+                            it = it.parent;
+                        }
+                        else
+                            break; // saftey
+                    }
+                    // We want the list going outer-to-inner, but we traversed from inner to outer.
+                    lst.Reverse();
+
+                    float fx = starting.cachedPlace.x;
+                    for(int i = 0; i < lst.Count; ++i)
+                    { 
+                        DragTarget dt = lst[i];
+                        dt.region = new Rect(fx, dt.target.cachedPlace.y, side, dt.target.cachedPlace.height);
+                        fx += side;
+                        lst[i] = dt;
+                    }
+                }
+                else if(dir == DropType.Right)
+                {
+                    while (it != null && it.parent != null)
+                    {
+                        if (it.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            if (it.parent.children.IndexOf(it) != it.parent.children.Count - 1)
+                                break;
+
+                            it = it.parent;
+                        }
+                        else if (it.parent.dockType == Dock.Type.Vertical)
+                        {
+                            lst.Add(new DragTarget(it.parent, dir, new Rect(), true));
+                            it = it.parent;
+                        }
+                        else
+                            break; //saftey
+                    }
+                    // We want the list going outer-to-inner, but we traversed from inner to outer.
+                    lst.Reverse();
+
+                    float fx = starting.cachedPlace.xMax;
+                    for (int i = 0; i < lst.Count; ++i)
+                    {
+                        DragTarget dt = lst[i];
+                        dt.region = new Rect(fx - side, dt.target.cachedPlace.y, side, dt.target.cachedPlace.height);
+                        fx -= side;
+                        lst[i] = dt;
+                    }
+
+                }
+                else if(dir == DropType.Top)
+                {
+                    while (it != null && it.parent != null)
+                    {
+                        if (it.parent.dockType == Dock.Type.Vertical)
+                        {
+                            if (it.parent.children.IndexOf(it) != 0)
+                                break;
+
+                            it = it.parent;
+                        }
+                        else if (it.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            lst.Add(new DragTarget(it.parent, dir, new Rect(), true));
+                            it = it.parent;
+                        }
+                        else
+                            break; // saftey
+                    }
+                    // We want the list going outer-to-inner, but we traversed from inner to outer.
+                    lst.Reverse();
+
+                    float fy = starting.cachedPlace.y;
+                    for (int i = 0; i < lst.Count; ++i)
+                    {
+                        DragTarget dt = lst[i];
+                        dt.region = new Rect(dt.target.cachedPlace.x, fy, dt.target.cachedPlace.width, side);
+                        fy += side;
+                        lst[i] = dt;
+                    }
+                }
+                else if(dir == DropType.Bottom)
+                {
+                    while (it != null && it.parent != null)
+                    {
+                        if (it.parent.dockType == Dock.Type.Vertical)
+                        {
+                            if (it.parent.children.IndexOf(it) != it.parent.children.Count - 1)
+                                break;
+
+                            it = it.parent;
+                        }
+                        else if (it.parent.dockType == Dock.Type.Horizontal)
+                        {
+                            lst.Add(new DragTarget(it.parent, dir, new Rect(), true));
+                            it = it.parent;
+                        }
+                        else
+                            break; //saftey
+                    }
+                    // We want the list going outer-to-inner, but we traversed from inner to outer.
+                    lst.Reverse();
+
+                    float fy = starting.cachedPlace.yMax;
+                    for (int i = 0; i < lst.Count; ++i)
+                    {
+                        DragTarget dt = lst[i];
+                        dt.region = new Rect(dt.target.cachedPlace.x, fy - side, dt.target.cachedPlace.width, side);
+                        fy -= side;
+                        lst[i] = dt;
+                    }
+                }
+
+                return lst;
             }
 
             /// <summary>
