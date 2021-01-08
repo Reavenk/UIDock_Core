@@ -1265,6 +1265,10 @@ namespace PxPre
             /// </returns>
             public DragTarget QueryDropTarget(Vector2 v2)
             {
+                // Don't attempt any docking while maximized
+                if(this.maximized != null)
+                    return new DragTarget(null, DropType.Invalid, new Rect(), false);
+
                 float dropDiam = this.props.dockIntoDim;
                 float dropRadi = dropDiam * 0.5f;
 
