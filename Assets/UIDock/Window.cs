@@ -100,6 +100,13 @@ namespace PxPre
             static FrameDrag drag = FrameDrag.None;
 
             /// <summary>
+            /// A cached record of the old drag value - this is only used
+            /// to check the value of drag after a MouseUp() event, during
+            /// and EndDrag() handler.
+            /// </summary>
+            static FrameDrag _prevDrag = FrameDrag.None;
+
+            /// <summary>
             /// The window being dragged by the mouse.
             /// </summary>
             static Window dragWindow = null;
@@ -590,9 +597,11 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IEndDragHandler.OnEndDrag(UnityEngine.EventSystems.PointerEventData eventData)
             {
-                drag = FrameDrag.None;
                 dragWindow = null;
-                this.system.EndWindowDrag(this, eventData);
+                drag = FrameDrag.None;
+
+                this.system.EndWindowDrag(this, _prevDrag, eventData);
+                _prevDrag = FrameDrag.None;
             }
 
             /// <summary>
@@ -717,6 +726,7 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IPointerUpHandler.OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
             { 
+                _prevDrag = drag;
                 drag = FrameDrag.None;
                 dragWindow = null;
             }

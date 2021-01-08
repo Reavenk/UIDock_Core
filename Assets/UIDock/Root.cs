@@ -1552,8 +1552,9 @@ namespace PxPre
             /// from a Window delegating their end drag messages.
             /// </summary>
             /// <param name="window">The window the message is being delegated from.</param>
+            /// <param name="dragType">The mode of dragging.</param>
             /// <param name="eventData">The event data.</param>
-            public void EndWindowDrag(Window window, UnityEngine.EventSystems.PointerEventData eventData)
+            public void EndWindowDrag(Window window, Window.FrameDrag dragType, UnityEngine.EventSystems.PointerEventData eventData)
             { 
                 if(this.windowDragged != window)
                     return;
@@ -1566,13 +1567,16 @@ namespace PxPre
                     this.dropVisual = null;
                 }
 
-                Vector2 v2 = ConvertMousePointToCoord(eventData);
-                DragTarget drt = this.QueryDropTarget(v2);
+                if(dragType == Window.FrameDrag.Position)
+                {
+                    Vector2 v2 = ConvertMousePointToCoord(eventData);
+                    DragTarget drt = this.QueryDropTarget(v2);
 
-                if(drt.type == DropType.Invalid || drt.ontop == false)
-                    return;
+                    if(drt.type == DropType.Invalid || drt.ontop == false)
+                        return;
 
-                this.DockWindow(window, drt.target, drt.type);
+                    this.DockWindow(window, drt.target, drt.type);
+                }
             }
 
             /// <summary>
