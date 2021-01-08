@@ -1625,6 +1625,10 @@ namespace PxPre
 
                 this.ClearSashes();
 
+                foreach(KeyValuePair<Dock, DockedTab> kvp in this.tabAssets)
+                    kvp.Value.Destroy();
+
+                this.tabAssets.Clear();
             }
 
             /// <summary>
