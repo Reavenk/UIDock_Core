@@ -4,6 +4,8 @@ UIDock is a library to create advanced user interface windows in Unity3D. These
 interfaces allow for floating windows, drag-and-drop docking, sash resizing, and 
 notebook tabs - similar to many advanced IDEs and other types of editors.
 
+![alt text](Sample.png)
+
 # Explanation
 
 Below is a link to a basic explanation of how the datastructures are managed
