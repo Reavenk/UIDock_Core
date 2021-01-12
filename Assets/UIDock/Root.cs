@@ -341,6 +341,22 @@ namespace PxPre
             }
 
             /// <summary>
+            /// Dock relative to an already docked window.
+            /// </summary>
+            /// <param name="win">The window to dock.</param>
+            /// <param name="relTo">The target window to dock relative to.</param>
+            /// <param name="dt">The location relative to relTo to dock the window.</param>
+            /// <returns>True if successfully docked. Else, false.</returns>
+            public bool DockWindowAtWin(Window win, Window relTo, DropType dt)
+            { 
+                Dock d;
+                if(this.dockLookup.TryGetValue(relTo.Win, out d) == false)
+                    return false;
+
+                return this.DockWindow(win, d, dt);
+            }
+
+            /// <summary>
             /// A part of the implementation of DockWindow() nested into its own function for
             /// organizational reasons.
             /// </summary>
