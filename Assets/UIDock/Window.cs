@@ -50,7 +50,14 @@ namespace PxPre
                 /// <summary>
                 /// If set, the window can be resized.
                 /// </summary>
-                Resizeable  = 1 << 3
+                Resizeable  = 1 << 3,
+
+                /// <summary>
+                /// The window is forced to be borderless and cannot
+                /// be removed from docking. There should only ever be
+                /// 1 of these at most in a dock system.
+                /// </summary>
+                LockedFrame = 1 << 4
             }
 
             /// <summary>
@@ -98,13 +105,6 @@ namespace PxPre
             /// The part of the frame on this.dragWindow being draged.
             /// </summary>
             static FrameDrag drag = FrameDrag.None;
-
-            /// <summary>
-            /// A cached record of the old drag value - this is only used
-            /// to check the value of drag after a MouseUp() event, during
-            /// and EndDrag() handler.
-            /// </summary>
-            static FrameDrag _prevDrag = FrameDrag.None;
 
             /// <summary>
             /// The window being dragged by the mouse.
@@ -191,6 +191,12 @@ namespace PxPre
             /// </summary>
             UnityEngine.UI.Text titlebar;
 
+
+            /// <summary>
+            /// The cached value of the flags that built the window.
+            /// </summary>
+            Flag flags = 0;
+
             /// <summary>
             /// Timer used to tracking the distance of clicks.
             /// Used with lastClickWin to detect double clicks.
@@ -202,6 +208,9 @@ namespace PxPre
             /// to track double clicks.
             /// </summary>
             static Window lastClickWin = null;
+
+            public bool Locked { get => (this.flags & Flag.LockedFrame) != 0; }
+            public bool Closable {get => (this.flags & Flag.HasClose) != 0; }
 
             /// <summary>
             /// Reset the double clicks tracking variables.
@@ -223,7 +232,7 @@ namespace PxPre
                 Root parent, 
                 RectTransform rt, 
                 string titlebar,
-                Flag flags = DefaultFlags)
+                Flag buildFlags = DefaultFlags)
             {
                 this.system = parent;
                 DockProps props = system.props;
@@ -256,23 +265,27 @@ namespace PxPre
                 this.rectTransform.sizeDelta = 
                     CalculateSizeFromInnerRect();
 
-                if((flags & Flag.HasClose) != 0)
+                if((buildFlags & Flag.LockedFrame) == 0)
                 {
-                    this.btnClose = this.AddButton(props.spriteBtnClose.sprite);
-                    this.btnClose.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_Close(); });
-                }
+                    if ((buildFlags & Flag.HasClose) != 0)
+                    {
+                        this.btnClose = this.AddButton(props.spriteBtnClose.sprite);
+                        this.btnClose.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_Close(); });
+                    }
 
-                if((flags & Flag.HasPin) != 0)
-                {
-                    this.btnPin = this.AddButton(props.spriteBtnPin.sprite);
-                    this.btnPin.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_Pin(); });
-                }
+                    if((buildFlags & Flag.HasPin) != 0)
+                    {
+                        this.btnPin = this.AddButton(props.spriteBtnPin.sprite);
+                        this.btnPin.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_Pin(); });
+                    }
 
-                if((flags & Flag.Floatable) != 0)
-                {
-                    this.btnRestMax = this.AddButton(props.spriteBtnMax.sprite);
-                    this.btnRestMax.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_RestMax(); });
+                    if((buildFlags & Flag.Floatable) != 0)
+                    {
+                        this.btnRestMax = this.AddButton(props.spriteBtnMax.sprite);
+                        this.btnRestMax.btn.onClick.AddListener(()=>{ this.OnTitlebarButton_RestMax(); });
+                    }
                 }
+                this.flags = buildFlags;
 
                 this.TitlebarText = titlebar;
 
@@ -576,11 +589,12 @@ namespace PxPre
                 return this.system.props.GetWindowSetting(this.style);
             }
 
-            public static void _StartOutsideDrag(FrameDrag frame, Window dragWin, Vector2 offset)
+            internal static void _StartOutsideDrag(FrameDrag frame, Window dragWin, Vector2 offset)
             { 
                 drag = frame;
                 dragWindow = dragWin;
                 localDragStart = offset;
+
             }
 
             /// <summary>
@@ -588,7 +602,13 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IBeginDragHandler.OnBeginDrag(UnityEngine.EventSystems.PointerEventData eventData)
             { 
-                if(dragWindow == this && drag == FrameDrag.Position)
+                if( this.Locked == true)
+                {
+                    eventData.pointerDrag = null;
+                    return;
+                }
+
+                if (dragWindow == this && drag == FrameDrag.Position)
                     this.system.StartWindowDrag(this, eventData);
             }
 
@@ -597,11 +617,9 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IEndDragHandler.OnEndDrag(UnityEngine.EventSystems.PointerEventData eventData)
             {
+                this.system.EndWindowDrag(this, drag, eventData);
                 dragWindow = null;
                 drag = FrameDrag.None;
-
-                this.system.EndWindowDrag(this, _prevDrag, eventData);
-                _prevDrag = FrameDrag.None;
             }
 
             /// <summary>
@@ -700,7 +718,7 @@ namespace PxPre
 
                 this.system.HandleWindowMouseDown(this, eventData);
 
-                if(this.style == DockProps.WinType.Float)
+                if (this.style == DockProps.WinType.Float)
                 {
                     if (localDragStart.y >= -props.winPadding)
                         drag |= FrameDrag.Top;
@@ -726,9 +744,11 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IPointerUpHandler.OnPointerUp(UnityEngine.EventSystems.PointerEventData eventData)
             { 
-                _prevDrag = drag;
-                drag = FrameDrag.None;
-                dragWindow = null;
+                if(eventData.dragging == false)
+                {
+                    drag = FrameDrag.None;
+                    dragWindow = null;
+                }
             }
 
             /// <summary>
@@ -736,6 +756,12 @@ namespace PxPre
             /// </summary>
             void UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick(UnityEngine.EventSystems.PointerEventData eventData)
             { 
+                if(this.Locked == true)
+                    return;
+
+                if(this.style == DockProps.WinType.Borderless || this.style == DockProps.WinType.BorderlessTabChild)
+                    return;
+
                 // The only thing we check here ATM is double clicking
                 // in the titlebar area.
                 float dCR = this.system.props.doubleClickRate;
@@ -799,7 +825,10 @@ namespace PxPre
 
                 this._SetMaximizeButton();
 
-                this.ChangeStyle(DockProps.WinType.Docked);
+                if((this.flags & Flag.LockedFrame) != 0)
+                    this.ChangeStyle(DockProps.WinType.Borderless);
+                else
+                    this.ChangeStyle(DockProps.WinType.Docked);
             }
 
             /// <summary>
@@ -814,8 +843,11 @@ namespace PxPre
 
                 this.style = winType;
 
-                if(winType == DockProps.WinType.Borderless)
+                if( winType == DockProps.WinType.BorderlessTabChild || 
+                    winType == DockProps.WinType.Borderless)
                 { 
+                    this.titlebar.gameObject.SetActive(false);
+
                     this.PlaceContentBorderless();
                 }
                 else
@@ -833,7 +865,9 @@ namespace PxPre
                     if(this.btnRestMax.plate != null)
                         ws.spriteBtnPlate.ApplySliced(this.btnRestMax.plate);
 
-                    if(placeContent == true)
+                    this.titlebar.gameObject.SetActive(true);
+
+                    if (placeContent == true)
                         this.PlaceContentWin();
                 }
             }

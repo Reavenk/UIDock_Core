@@ -131,6 +131,12 @@ namespace PxPre
                 /// No window shoould be visible. Used to hide the window
                 /// when tabbed.
                 /// </summary>
+                BorderlessTabChild,
+
+                /// <summary>
+                /// Windows that aren't docked tabs that have the same style.
+                /// For now this is only locked windows.
+                /// </summary>
                 Borderless,
 
                 /// <summary>
@@ -379,6 +385,7 @@ namespace PxPre
                         return this.dockWin;
 
                     case WinType.Borderless:
+                    case WinType.BorderlessTabChild:
                         // There really are no settings for borderless, but we return
                         // *something* to avoid null exceptions or having ensure null
                         // checks are wrapped where needed.

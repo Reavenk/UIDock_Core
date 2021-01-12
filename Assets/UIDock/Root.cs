@@ -425,7 +425,7 @@ namespace PxPre
                             oldParent.children[idx] = newTabDock;
                         }
 
-                        dst.window.ChangeStyle(DockProps.WinType.Borderless);
+                        dst.window.ChangeStyle(DockProps.WinType.BorderlessTabChild);
                     }
                     else // if(dst.dockType == Dock.Type.Tab)
                     { 
@@ -435,7 +435,7 @@ namespace PxPre
                     // Layout everything to force creating/deleting tab assets and
                     // to re-align them.
                     newDock.parent.activeTab = newDock;
-                    win.ChangeStyle(DockProps.WinType.Borderless);
+                    win.ChangeStyle(DockProps.WinType.BorderlessTabChild);
                     this.SetDirty();
                     return newDock;
                 }
@@ -809,7 +809,9 @@ namespace PxPre
                     single.parent = colParent.parent;
                 }
 
-                if (single != null && single.dockType == Dock.Type.Window)
+                if (
+                    single != null && 
+                    single.dockType == Dock.Type.Window)
                 {
                     // This is most important for tabs. If we close the 2nd to last tab and it
                     // was visible, we need the singled item to be visible, and we need to 
@@ -817,7 +819,9 @@ namespace PxPre
                     //
                     // We could if statement this for just Tab parented things,
                     // but for now it's everything indiscriminantly.
-                    single.window.ChangeStyle(DockProps.WinType.Docked, true);
+                    if(single.window.Locked == false)
+                        single.window.ChangeStyle(DockProps.WinType.Docked, true);
+
                     single.window.gameObject.SetActive(true);
                 }
 

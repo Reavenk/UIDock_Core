@@ -145,74 +145,88 @@ namespace PxPre
                         this.HandleDock();
                     });
 
-                // If the tag is being dragged, redirect it to the window to
-                // initiate a pull-off.
-                UnityEngine.EventSystems.EventTrigger etTab = goTab.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-                etTab.triggers = new List<UnityEngine.EventSystems.EventTrigger.Entry>();
-                UnityEngine.EventSystems.EventTrigger.Entry dragEnt = new UnityEngine.EventSystems.EventTrigger.Entry();
-                dragEnt.eventID = UnityEngine.EventSystems.EventTriggerType.BeginDrag;
-                dragEnt.callback.AddListener(
-                    (x)=>
-                    { 
-                        UnityEngine.EventSystems.PointerEventData evt = 
-                            x as UnityEngine.EventSystems.PointerEventData;
-
-                        // Transform the point from the tab, to the window about to be ripped.
-                        Vector2 mouseInTab = goTab.transform.worldToLocalMatrix.MultiplyPoint(evt.position);
-                        evt.position = tabbedWin.window.transform.localToWorldMatrix.MultiplyPoint(mouseInTab);
-                        // Make sure it's active before handoff. Will be inactive if not the main tab.
-                        tabbedWin.window.gameObject.SetActive(true);
-                        // Force drag state
-                        Window._StartOutsideDrag( Window.FrameDrag.Position, tabbedWin.window, Vector2.zero);
-                        // Do handoff
-                        evt.dragging = true;
-                        evt.pointerDrag = tabbedWin.window.gameObject;
-                        // Make sure it handles OnBeginDrag - certain important drag things are 
-                        // initialized there.
-                        UnityEngine.EventSystems.IBeginDragHandler dragBegin = tabbedWin.window;
-                        dragBegin.OnBeginDrag(evt);
-                        // Reset styles + shadow
-                        this.root.UndockWindow(tabbedWin.window);   
-
-                    });
-                etTab.triggers.Add(dragEnt);
-
-                GameObject goCloseBtn = new GameObject("CloseButton");
-                goCloseBtn.transform.SetParent(rtTab);
-                ret.closeButton = goCloseBtn.AddComponent<UnityEngine.UI.Image>();
-                ret.closeButton.sprite = props.tabs.innerTabBtn;
-                ret.closeButton.type = UnityEngine.UI.Image.Type.Sliced;
-                RectTransform rtCloseBtn = ret.closeButton.rectTransform;
-                rtCloseBtn.anchorMin = new Vector2(1.0f, 0.0f);
-                rtCloseBtn.anchorMax = new Vector2(1.0f, 1.0f);
-                rtCloseBtn.offsetMin = 
-                    new Vector2(
-                        -this.root.props.tabs.closeBorderRight - this.root.props.tabs.closeWidth, 
-                        this.root.props.tabs.closeBorderVert);
-                rtCloseBtn.offsetMax = 
-                    new Vector2(
-                        -this.root.props.tabs.closeBorderRight, 
-                        -this.root.props.tabs.closeBorderVert);
-
-                UnityEngine.UI.Button closeBtn = goCloseBtn.AddComponent<UnityEngine.UI.Button>();
-                closeBtn.onClick.AddListener(
-                    ()=>
-                    { 
-                        this.root.CloseWindow(tabbedWin.window);
-                    });
-
-                if(props.tabs.closeWindowIcon != null)
+                // Prevent locked windows from being ripped from the tab system. The issue here is
+                // that if it's ripped, then it should turn to a floating window, which locked windows
+                // can't.
+                if(tabbedWin.window.Locked == false)
                 {
-                    GameObject goCloseIco = new GameObject("Close");
-                    goCloseIco.transform.SetParent(rtCloseBtn);
-                    UnityEngine.UI.Image imgCloseIco = goCloseIco.AddComponent<UnityEngine.UI.Image>();
-                    RectTransform rtClIco = imgCloseIco.rectTransform;
-                    imgCloseIco.sprite = props.tabs.closeWindowIcon;
-                    rtClIco.anchorMin = new Vector2(0.5f, 0.5f);
-                    rtClIco.anchorMax = new Vector2(0.5f, 0.5f);
-                    rtClIco.pivot = new Vector2(0.5f, 0.5f);
-                    rtClIco.anchoredPosition = Vector2.zero;
-                    rtClIco.sizeDelta = props.tabs.closeWindowIcon.rect.size;
+                    // If the tag is being dragged, redirect it to the window to
+                    // initiate a pull-off.
+                    UnityEngine.EventSystems.EventTrigger etTab = goTab.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+                    etTab.triggers = new List<UnityEngine.EventSystems.EventTrigger.Entry>();
+                    UnityEngine.EventSystems.EventTrigger.Entry dragEnt = new UnityEngine.EventSystems.EventTrigger.Entry();
+                    dragEnt.eventID = UnityEngine.EventSystems.EventTriggerType.BeginDrag;
+                    dragEnt.callback.AddListener(
+                        (x)=>
+                        { 
+                            UnityEngine.EventSystems.PointerEventData evt = 
+                                x as UnityEngine.EventSystems.PointerEventData;
+
+                            // Transform the point from the tab, to the window about to be ripped.
+                            Vector2 mouseInTab = goTab.transform.worldToLocalMatrix.MultiplyPoint(evt.position);
+                            evt.position = tabbedWin.window.transform.localToWorldMatrix.MultiplyPoint(mouseInTab);
+
+                            // Make sure it's active before handoff. Will be inactive if not the main tab.
+                            tabbedWin.window.gameObject.SetActive(true);
+
+                            // Do handoff
+                            evt.dragging = true;
+                            evt.pointerDrag = tabbedWin.window.gameObject;
+
+                            // Force titlebar drag state
+                            Window._StartOutsideDrag( Window.FrameDrag.Position, tabbedWin.window, Vector2.zero);
+
+                            // Make sure it handles OnBeginDrag - certain important drag things are 
+                            // initialized there.
+                            UnityEngine.EventSystems.IBeginDragHandler dragBegin = tabbedWin.window;
+                            dragBegin.OnBeginDrag(evt);
+                            // Reset styles + shadow
+                            this.root.UndockWindow(tabbedWin.window);   
+
+                        });
+                    etTab.triggers.Add(dragEnt);
+                }
+
+                if( tabbedWin.window.Closable == true && 
+                    tabbedWin.window.Locked == false)
+                {
+                    GameObject goCloseBtn = new GameObject("CloseButton");
+                    goCloseBtn.transform.SetParent(rtTab);
+                    ret.closeButton = goCloseBtn.AddComponent<UnityEngine.UI.Image>();
+                    ret.closeButton.sprite = props.tabs.innerTabBtn;
+                    ret.closeButton.type = UnityEngine.UI.Image.Type.Sliced;
+                    RectTransform rtCloseBtn = ret.closeButton.rectTransform;
+                    rtCloseBtn.anchorMin = new Vector2(1.0f, 0.0f);
+                    rtCloseBtn.anchorMax = new Vector2(1.0f, 1.0f);
+                    rtCloseBtn.offsetMin = 
+                        new Vector2(
+                            -this.root.props.tabs.closeBorderRight - this.root.props.tabs.closeWidth, 
+                            this.root.props.tabs.closeBorderVert);
+                    rtCloseBtn.offsetMax = 
+                        new Vector2(
+                            -this.root.props.tabs.closeBorderRight, 
+                            -this.root.props.tabs.closeBorderVert);
+
+                    UnityEngine.UI.Button closeBtn = goCloseBtn.AddComponent<UnityEngine.UI.Button>();
+                    closeBtn.onClick.AddListener(
+                        ()=>
+                        { 
+                            this.root.CloseWindow(tabbedWin.window);
+                        });
+
+                    if(props.tabs.closeWindowIcon != null)
+                    {
+                        GameObject goCloseIco = new GameObject("Close");
+                        goCloseIco.transform.SetParent(rtCloseBtn);
+                        UnityEngine.UI.Image imgCloseIco = goCloseIco.AddComponent<UnityEngine.UI.Image>();
+                        RectTransform rtClIco = imgCloseIco.rectTransform;
+                        imgCloseIco.sprite = props.tabs.closeWindowIcon;
+                        rtClIco.anchorMin = new Vector2(0.5f, 0.5f);
+                        rtClIco.anchorMax = new Vector2(0.5f, 0.5f);
+                        rtClIco.pivot = new Vector2(0.5f, 0.5f);
+                        rtClIco.anchoredPosition = Vector2.zero;
+                        rtClIco.sizeDelta = props.tabs.closeWindowIcon.rect.size;
+                    }
                 }
 
                 GameObject goText = new GameObject("Text");
@@ -286,7 +300,9 @@ namespace PxPre
                     if(isActive)
                     {
                         rtt.SetSiblingIndex(floor.transform.GetSiblingIndex() + 1);
-                        ta.closeButton.gameObject.SetActive(true);
+
+                        if(ta.closeButton != null)
+                            ta.closeButton.gameObject.SetActive(true);
                     }
                     else
                     {
@@ -294,7 +310,9 @@ namespace PxPre
 
                         // If there's so little space, don't even show the close button
                         bool showClose = (useTabWidth >= this.root.props.tabs.minWidth);
-                        ta.closeButton.gameObject.SetActive(showClose);
+
+                        if(ta.closeButton != null)
+                            ta.closeButton.gameObject.SetActive(showClose);
                     }
 
                     if(useTabWidth <= this.root.props.tabs.compactThreshold)
