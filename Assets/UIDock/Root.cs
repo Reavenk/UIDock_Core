@@ -253,6 +253,11 @@ namespace PxPre.UIDock
         Dictionary<Dock, DockedTab> tabAssets = new Dictionary<Dock, DockedTab>();
 
         /// <summary>
+        /// The event listener.
+        /// </summary>
+        public PxPre.UIDock.IDockListener listener = null;
+
+        /// <summary>
         /// Is there a maximized window.
         /// </summary>
         /// <returns>True if there is a maximized window; else false.</returns>
@@ -1052,8 +1057,19 @@ namespace PxPre.UIDock
             if (this.maximized == window)
                 this.RestoreWindow(window);
 
+            if (this.listener != null && this.listener.RequestUndock(this, window) == false)
+                return false;
+
             this.UndockWindow(window);
             this.floatingWindows.Remove(window);
+
+            if (this.listener != null)
+            {
+                if(this.listener.RequestClose(this, window) == false)
+                    return false;
+
+                this.listener.OnClosing(this, window);
+            }
 
             this.windowLookup.Remove(window.Win);
             GameObject.Destroy(window.shadow.gameObject);
