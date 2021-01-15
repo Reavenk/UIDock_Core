@@ -891,5 +891,21 @@ namespace PxPre.UIDock
                 this.system.props.spriteBtnRestore.ApplySimple(this.btnRestMax.icon);
             }
         }
+
+        public void ToggleGameObject(bool state)
+        { 
+            if(state == false)
+            { 
+                this.gameObject.SetActive(false);
+                if(this.shadow != null)
+                    this.shadow.gameObject.SetActive(false);
+            }
+            else
+            { 
+                this.gameObject.SetActive(true);
+                if (this.shadow != null && this.style == DockProps.WinType.Float)
+                    this.shadow.gameObject.SetActive(true);
+            }
+        }
     }
 }
