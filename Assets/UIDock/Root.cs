@@ -434,6 +434,7 @@ namespace PxPre.UIDock
                 { 
                     Dock oldParent = dst.parent;
                     Dock newTabDock = new Dock(Dock.Type.Tab, new Dock[]{newDock, dst });
+                    newTabDock.cachedPlace = dst.cachedPlace; // Take on the size of what we're replacing
                     newTabDock.parent = oldParent;
 
                     if (oldParent == null)
