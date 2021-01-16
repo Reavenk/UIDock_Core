@@ -1118,8 +1118,11 @@ namespace PxPre.UIDock
 
                 this.dirtySashPosition = false;
             }
+        }
 
-
+        public void ForceLayout()
+        {
+            this.UpdateWindowsManagement(true, true);
         }
 
         /// <summary>
@@ -1886,6 +1889,104 @@ namespace PxPre.UIDock
             base.OnRectTransformDimensionsChange();
 
             this.SetDirtySashPos();
+        }
+
+        protected Dock GetDockAtAddress(bool lenient, params int [] ri)
+        { 
+            if(ri == null || ri.Length == 0)
+                return this.root;
+
+            Dock dit = this.root;
+            for(int i = 0; i < ri.Length; ++i)
+            { 
+                int idx = ri[i];
+
+                if(
+                    dit.IsContainerType() == false || 
+                    dit.children == null || 
+                    idx < 0 || 
+                    idx >= dit.children.Count)
+                {
+                    return lenient ? dit : null;
+                }
+
+                dit = dit.children[idx];
+            }
+            return dit;
+        }
+
+        protected bool ResizeDock(Dock d, params float [] rf)
+        { 
+            if( d == null || 
+                (d.dockType != Dock.Type.Horizontal && d.dockType != Dock.Type.Vertical))
+            { 
+                return false;
+            }
+
+            float avg = 0.0f;
+            foreach(float f in rf)
+                avg += f;
+
+            if(rf.Length > 0)
+                avg /= rf.Length;
+
+            if(avg == 0.0f)
+                avg = 1.0f;
+
+            // These values are treated as proportions, they'll be converted to actual pixel sizes on the layout.
+            float totalProp = d.children.Count * avg;
+
+            if (d.dockType == Dock.Type.Horizontal)
+            {
+                float totalW = 0.0f;
+                for (int i = 0; i < d.children.Count; ++i)
+                    totalW += d.children[i].cachedPlace.width;
+
+                float fx = d.cachedPlace.x;
+                for (int i = 0; i < d.children.Count; ++i)
+                { 
+                    float nw = (i < rf.Length) ? rf[i] : avg;
+                    float prop = nw / totalProp * totalW;
+                    d.children[i].cachedPlace.x = fx;
+                    d.children[i].cachedPlace.width = nw;
+
+                    fx += nw;
+                    fx += this.props.sashWidth;
+                    UpdateDockedLayoutHeirarchy(new LayoutEntry(d.children[i], d.children[i].cachedPlace));
+                }
+            }
+            else
+            {
+                float totalH = 0.0f;
+                for (int i = 0; i < d.children.Count; ++i)
+                    totalH += d.children[i].cachedPlace.height;
+
+                float fy = d.cachedPlace.y;
+                for (int i = 0; i < d.children.Count; ++i)
+                { 
+                    float nh = (i < rf.Length) ? rf[i] : avg;
+                    float prop = nh / totalProp * totalH;
+                    d.children[i].cachedPlace.y = fy;
+                    d.children[i].cachedPlace.height = nh;
+
+                    fy += nh;
+                    fy += this.props.sashWidth;
+                    UpdateDockedLayoutHeirarchy(new LayoutEntry(d.children[i], d.children[i].cachedPlace));
+                }
+            }
+
+            this.dirtySashPosition = true;
+            this.SetDirty();
+            return true;
+        }
+
+        public bool ResizeAddressWithProportions(int [] addr, float [] proportions)
+        { 
+            Dock d = GetDockAtAddress(false, addr);
+            if(d == null)
+                return false;
+
+            return ResizeDock(d, proportions);
         }
 
     }
