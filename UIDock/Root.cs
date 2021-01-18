@@ -815,8 +815,9 @@ namespace PxPre.UIDock
                 // If the deletion leave us with a root container
                 // with only 1 child, that 1 child becomes the new root.
                 this.root = colParent.children[0];
+                single = this.root;
                 this.root.parent = null;
-                return;
+
             }
             else
             {
@@ -844,6 +845,9 @@ namespace PxPre.UIDock
 
                 single.window.gameObject.SetActive(true);
             }
+
+            if(single == this.root)
+                return;
 
             // The parent should no longer exist, but this means we put single
             // into another container that we didn't add with the same protections
