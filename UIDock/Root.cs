@@ -291,7 +291,7 @@ namespace PxPre.UIDock
             GameObject goWindow = new GameObject("DockWindow");
             Window window = goWindow.AddComponent<Window>();
             window.Initialize(this, rt, title, flags);
-            window.NotifyFloating();
+            window.NotifyFloating(true);
 
             window.rectTransform.anchoredPosition = 
                 this.GetNewSpawnSpot();

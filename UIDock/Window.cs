@@ -803,9 +803,9 @@ namespace PxPre.UIDock
         /// <summary>
         /// Called on the window when changed to be floating.
         /// </summary>
-        public void NotifyFloating()
+        public void NotifyFloating(bool forceStyle = false)
         {
-            this.ChangeStyle(DockProps.WinType.Float);
+            this.ChangeStyle(DockProps.WinType.Float, true, forceStyle);
 
             if (this.btnPin.plate != null)
                 this.btnPin.plate.gameObject.SetActive(false);
@@ -834,9 +834,10 @@ namespace PxPre.UIDock
         /// </summary>
         /// <param name="winType">The window style to change to.</param>
         /// <param name="placeContent">If true, PlaceContent() will be called afterwards.</param>
-        public void ChangeStyle(DockProps.WinType winType, bool placeContent = true)
+        /// <param name="forceStyle">If true, setting the style is forced, even if it's detected to be redundant.</param>
+        public void ChangeStyle(DockProps.WinType winType, bool placeContent = true, bool forceStyle = false)
         { 
-            if(this.style == winType)
+            if(this.style == winType && forceStyle == false)
                 return;
 
             this.style = winType;
