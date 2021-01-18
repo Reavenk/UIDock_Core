@@ -17,8 +17,9 @@ Root script derives off the UI image so the GameObject cannot have any UI Graphi
 inside of it. Then assign it a Props member value - see the section below for more
 information on Props.
 
-The scene SampleScene shows a simple demo of how to use. See the script Test.cs for
-its implementation.
+This repository is the library and does not come with its own Unity project or examples.
+For examples, see the development repository at https://github.com/Reavenk/UIDock_Dev.
+It comes with this repo as a submodule.
 
 # How To Modify
 
