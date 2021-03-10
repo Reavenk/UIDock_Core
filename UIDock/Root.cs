@@ -715,6 +715,7 @@ namespace PxPre.UIDock
                         newDock.parent = dst.parent;
                         int dstIdx = dst.parent.children.IndexOf(dst);
                         dst.parent.children.Insert(dstIdx + 1, newDock);
+                        return newDock;
                     }
                 }
                     
