@@ -4,7 +4,7 @@
 // <author>William Leu</author>
 // <date>04/12/2020</date>
 // <summary>
-// The Root loccation for the UIDock system.
+// The Root location for the UIDock system.
 // </summary>
 
 using System.Collections;
